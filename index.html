@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>한국형 공포·탐욕지수</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+  :root{
+    --bg:#0a0b0d;
+    --panel:#101216;
+    --ink:#f4f5f7;
+    --muted:#8b8f99;
+    --faint:#2a2d35;
+    --line:#e8eaed;
+    --extreme-fear:#e5484d;
+    --fear:#f5a524;
+    --neutral:#9aa0a6;
+    --greed:#46a758;
+    --extreme-greed:#27a567;
+    --grad-top:#3bd07f;     /* 탐욕(높음) */
+    --grad-bot:#e5484d;     /* 공포(낮음) */
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'IBM Plex Sans KR',system-ui,sans-serif;}
+  body{
+    min-height:100vh;display:flex;justify-content:center;
+    background:
+      radial-gradient(120% 60% at 80% -10%, rgba(59,208,127,.06), transparent 60%),
+      radial-gradient(120% 60% at 0% 110%, rgba(229,72,77,.06), transparent 60%),
+      var(--bg);
+  }
+  .app{width:100%;max-width:480px;padding:26px 22px 34px;}
+
+  header .eyebrow{font-size:13px;letter-spacing:.04em;color:var(--muted);
+    display:flex;align-items:center;gap:7px;font-weight:500}
+  header .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--fear);
+    box-shadow:0 0 10px currentColor}
+  .value{font-family:'Fraunces',serif;font-weight:600;letter-spacing:-.02em;
+    font-size:76px;line-height:.96;margin:10px 0 2px;font-variant-numeric:tabular-nums}
+  .staterow{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .state{font-size:20px;font-weight:600}
+  .change{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--muted)}
+  .change b{font-weight:500}
+
+  /* gauge strip */
+  .gauge{position:relative;height:8px;border-radius:99px;margin:20px 0 4px;overflow:hidden;
+    background:linear-gradient(90deg,var(--extreme-fear),var(--fear) 32%,var(--neutral) 50%,var(--greed) 70%,var(--extreme-greed));}
+  .gauge .mk{position:absolute;top:-4px;width:3px;height:16px;border-radius:2px;background:#fff;
+    box-shadow:0 0 0 2px var(--bg);transition:left .5s cubic-bezier(.2,.8,.2,1)}
+  .gaugelabels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;margin-top:6px}
+
+  /* tabs */
+  .tabs{display:flex;gap:4px;margin:22px 0 6px;background:var(--panel);padding:4px;border-radius:12px}
+  .tabs button{flex:1;border:0;background:transparent;color:var(--muted);
+    font-family:'IBM Plex Sans KR';font-size:13px;font-weight:600;padding:9px 0;border-radius:9px;
+    cursor:pointer;transition:.18s}
+  .tabs button.on{background:#23262d;color:var(--ink)}
+  .tabs button:active{transform:scale(.97)}
+
+  .chartwrap{position:relative;margin-top:8px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .tip{position:absolute;pointer-events:none;opacity:0;transform:translate(-50%,0);
+    background:#191c22;border:1px solid var(--faint);border-radius:10px;padding:8px 11px;
+    font-size:12px;white-space:nowrap;transition:opacity .12s;z-index:5;
+    box-shadow:0 8px 24px rgba(0,0,0,.45)}
+  .tip .td{color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-bottom:3px}
+  .tip .tv{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+  .tip .ts{font-size:11px;margin-left:6px;font-weight:500}
+
+  .controls{display:flex;justify-content:space-between;align-items:center;margin-top:18px}
+  .legend{display:flex;gap:13px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+  .legend span{display:flex;align-items:center;gap:5px}
+  .legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+  .usbtn{border:1px solid var(--faint);background:transparent;color:var(--muted);
+    font-family:'IBM Plex Sans KR';font-size:12px;font-weight:600;padding:7px 12px;border-radius:9px;cursor:pointer;
+    display:flex;align-items:center;gap:7px;transition:.18s}
+  .usbtn.on{color:var(--ink);border-color:#3a6ea5}
+  .usbtn .sw{width:18px;height:3px;border-radius:2px;background:#5b8fd6;opacity:.4;transition:.18s}
+  .usbtn.on .sw{opacity:1}
+  .controls .btns{display:flex;gap:6px}
+  .bufbtn .sw{background:#c084fc}
+  .bufbtn.on{border-color:#7c3aed}
+
+  footer{margin-top:24px;font-size:11.5px;color:var(--muted);line-height:1.6;
+    border-top:1px solid var(--faint);padding-top:14px}
+  footer b{color:#cfd2d8;font-weight:600}
+  .badge{display:inline-block;background:#2a1f12;color:var(--fear);border:1px solid #5a3d15;
+    font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;margin-right:6px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="eyebrow"><span class="dot" id="dot"></span> 한국형 공포·탐욕지수 <span style="opacity:.5">· KOSPI</span></div>
+    <div class="value" id="bigval">–</div>
+    <div class="staterow">
+      <div class="state" id="state">–</div>
+      <div class="change" id="change"></div>
+    </div>
+    <div class="gauge"><div class="mk" id="mk"></div></div>
+    <div class="gaugelabels"><span>0 극단적 공포</span><span>50</span><span>극단적 탐욕 100</span></div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button data-d="7">1주</button>
+    <button data-d="30">1개월</button>
+    <button data-d="90">3개월</button>
+    <button data-d="365" class="on">1년</button>
+    <button data-d="0">전체</button>
+  </div>
+
+  <div class="chartwrap">
+    <svg id="chart" viewBox="0 0 480 300" preserveAspectRatio="none"></svg>
+    <div class="tip" id="tip"></div>
+  </div>
+
+  <div class="controls">
+    <div class="legend">
+      <span><i style="background:var(--extreme-fear)"></i>공포</span>
+      <span><i style="background:var(--neutral)"></i>중립</span>
+      <span><i style="background:var(--extreme-greed)"></i>탐욕</span>
+    </div>
+    <div class="btns">
+    <button class="usbtn" id="usbtn"><span class="sw"></span>미국 비교</button>
+    <button class="usbtn bufbtn" id="bufbtn"><span class="sw"></span>버핏지수</button>
+    </div>
+  </div>
+
+  <footer id="note">
+    <span class="badge">예시 데이터</span>지금은 구조 확인용 <b>임의 생성 데이터</b>입니다.
+    같은 폴더에 <b>history.json</b>(korea_fng.py 실행 결과)을 두고 웹서버/호스팅으로 열면 <b>자동으로 실제 지수</b>로 바뀝니다.
+  </footer>
+</div>
+
+<script>
+/* =========================================================================
+   실제 데이터 연결 (이미 자동으로 연결돼 있음)
+   -------------------------------------------------------------------------
+   이 페이지는 켜질 때 같은 폴더의 history.json 을 자동으로 불러온다.
+   파일이 있으면 실제 지수, 없으면 아래 generateSample() 의 예시로 표시한다.
+   (file:// 로 직접 열면 브라우저가 fetch 를 막아 예시로 뜰 수 있으니,
+    호스팅하거나 로컬 웹서버로 열면 실제 데이터가 보인다.)
+
+   history.json 형식 (날짜 오름차순):
+     { "kr":[{"d":"2024-01-02","v":51.3}, ...],
+       "us":[{"d":"2024-01-02","v":62.0}, ...] }   // us 의 v 는 null 가능
+
+   korea_fng.py 가 이 파일을 자동 생성한다(엔진 끝부분 export 블록 참고).
+   ========================================================================= */
+
+function generateSample(){
+  // 시드 기반 의사난수(LCG) — 매번 동일한 예시가 나오도록
+  let s = 20260529;
+  const rnd = () => (s = (s*1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+  function walk(seed, mean){
+    s = seed; let v = mean, out = [];
+    const start = new Date('2023-01-01'), end = new Date();
+    let t = 0;
+    for(let dt = new Date(start); dt <= end; dt.setDate(dt.getDate()+1)){
+      const wd = dt.getDay();
+      if(wd === 0 || wd === 6) continue;            // 주말 제외
+      t++;
+      const regime = 12 * Math.sin(t/120) + 6 * Math.sin(t/37);  // 느린 국면 변동
+      const drift  = (mean + regime - v) * 0.05;                 // 평균회귀
+      const shock  = (rnd() - 0.5) * 7;                          // 잡음
+      v = clamp(v + drift + shock, 3, 97);
+      out.push({ d: dt.toISOString().slice(0,10), v: Math.round(v*10)/10 });
+    }
+    return out;
+  }
+  // 버핏지수용: 110~230% 범위에서 천천히 변하는 예시
+  function walkBuf(seed){
+    s = seed; let v = 170, out = [];
+    const start = new Date('2023-01-01'), end = new Date();
+    let t = 0;
+    for(let dt = new Date(start); dt <= end; dt.setDate(dt.getDate()+1)){
+      const wd = dt.getDay();
+      if(wd === 0 || wd === 6) continue;
+      t++;
+      const regime = 18 * Math.sin(t/150);
+      const drift  = (170 + regime - v) * 0.04;
+      const shock  = (rnd() - 0.5) * 2.2;
+      v = clamp(v + drift + shock, 110, 230);
+      out.push({ d: dt.toISOString().slice(0,10), v: Math.round(v*10)/10 });
+    }
+    return out;
+  }
+  return { kr: walk(11, 48), us: walk(73, 58), buf: walkBuf(900) };   // 미국은 다소 더 탐욕 쪽
+}
+
+/* ---------- 구간/색 ---------- */
+function zone(v){
+  if(v < 25) return {name:'극단적 공포', c:getCss('--extreme-fear')};
+  if(v < 45) return {name:'공포',       c:getCss('--fear')};
+  if(v < 55) return {name:'중립',       c:getCss('--neutral')};
+  if(v < 75) return {name:'탐욕',       c:getCss('--greed')};
+  return        {name:'극단적 탐욕', c:getCss('--extreme-greed')};
+}
+function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+/* ---------- 차트 렌더 ---------- */
+const VB_W = 480, VB_H = 300;
+const PAD = {l:8, r:8, t:26, b:24};
+const plotW = VB_W - PAD.l - PAD.r;
+const plotH = VB_H - PAD.t - PAD.b;
+const yOf = v => PAD.t + (1 - v/100) * plotH;
+
+let DATA = null;          // {kr:[...], us:[...]}
+let windowDays = 365;
+let showUS = false;
+let showBUF = false;       // 버핏지수(오른쪽 축) 표시 여부
+let viewKR = [];          // 현재 창에 보이는 한국 데이터
+
+function sliceWindow(arr){
+  if(!windowDays) return arr.slice();
+  return arr.slice(Math.max(0, arr.length - windowDays));
+}
+
+function smoothPath(pts){
+  if(pts.length < 2) return '';
+  let d = `M ${pts[0].x},${pts[0].y}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||p2;
+    const c1x=p1.x+(p2.x-p0.x)/6, c1y=p1.y+(p2.y-p0.y)/6;
+    const c2x=p2.x-(p3.x-p1.x)/6, c2y=p2.y-(p3.y-p1.y)/6;
+    d += ` C ${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`;
+  }
+  return d;
+}
+
+function ptsFrom(arr){
+  const n = arr.length;
+  return arr.map((o,i)=>({ x: PAD.l + (n<=1?0:(i/(n-1))*plotW), y: yOf(o.v), v:o.v, d:o.d }));
+}
+
+function render(){
+  const svg = document.getElementById('chart');
+  viewKR = sliceWindow(DATA.kr);
+  const kr = ptsFrom(viewKR);
+  const n = kr.length;
+
+  // 배경 감정 구간 띠
+  const bands = [[0,25,'--extreme-fear'],[25,45,'--fear'],[45,55,'--neutral'],[55,75,'--greed'],[75,100,'--extreme-greed']];
+  let bg = bands.map(([lo,hi,c])=>{
+    const y=yOf(hi), h=yOf(lo)-yOf(hi);
+    return `<rect x="0" y="${y}" width="${VB_W}" height="${h}" fill="${getCss(c)}" opacity="0.07"/>`;
+  }).join('');
+  // 경계 점선 + 우측 라벨
+  [25,50,75].forEach(g=>{
+    bg += `<line x1="0" y1="${yOf(g)}" x2="${VB_W}" y2="${yOf(g)}" stroke="${getCss('--faint')}" stroke-width="1" stroke-dasharray="2 4"/>`;
+  });
+
+  // 미국 비교선(점선, 흐리게). 값이 없는 날짜(null)는 건너뛴다.
+  // kr 와 동일 길이/동일 날짜로 정렬돼 있으므로 인덱스 위치가 자동으로 일치한다.
+  let usLine = '';
+  if(showUS && DATA.us){
+    const usArr = sliceWindow(DATA.us);
+    const n2 = usArr.length;
+    const us = usArr.map((o,i)=>({
+        x: PAD.l + (n2<=1?0:(i/(n2-1))*plotW), y: yOf(o.v), v: o.v
+      })).filter(p => p.v != null && !isNaN(p.v));
+    if(us.length > 1)
+      usLine = `<path d="${smoothPath(us)}" fill="none" stroke="#5b8fd6" stroke-width="1.6" stroke-dasharray="3 4" opacity="0.7"/>`;
+  }
+
+  // 버핏지수(미국): 0~100 FNG와 단위가 달라(%) 별도 오른쪽 축으로 그린다.
+  // 보이는 구간의 최소/최대로 자동 스케일링하고, 오른쪽에 % 눈금 3개를 표시한다.
+  let bufLine = '', bufAxis = '';
+  if(showBUF && DATA.buf){
+    const bArr = sliceWindow(DATA.buf);
+    const nb = bArr.length;
+    const vals = bArr.map(o=>o.v).filter(v=>v!=null && !isNaN(v));
+    if(vals.length > 1){
+      let mn = Math.min(...vals), mx = Math.max(...vals);
+      const padv = (mx-mn)*0.12 || 5; mn -= padv; mx += padv;
+      const yBuf = val => PAD.t + (1 - (val-mn)/(mx-mn)) * plotH;   // 오른쪽 축 매핑
+      const bpts = bArr.map((o,i)=>({
+          x: PAD.l + (nb<=1?0:(i/(nb-1))*plotW),
+          y: (o.v==null||isNaN(o.v)) ? null : yBuf(o.v), v: o.v
+        })).filter(p => p.v != null && !isNaN(p.v));
+      if(bpts.length > 1){
+        bufLine = `<path d="${smoothPath(bpts)}" fill="none" stroke="#c084fc" stroke-width="1.8" opacity="0.9"/>`;
+        const ticks = [mn + (mx-mn)*0.08, (mn+mx)/2, mx - (mx-mn)*0.08];
+        bufAxis = ticks.map(t =>
+          `<text x="${VB_W-PAD.r}" y="${yBuf(t)+3}" text-anchor="end" fill="#c084fc" `
+          + `font-size="10" font-family="IBM Plex Mono" opacity="0.85">${Math.round(t)}%</text>`
+        ).join('');
+      }
+    }
+  }
+
+  // 한국 라인 + 영역
+  const linePath = smoothPath(kr);
+  const area = linePath + ` L ${kr[n-1].x},${yOf(0)} L ${kr[0].x},${yOf(0)} Z`;
+
+  // 최저/최고
+  let lo=kr[0], hi=kr[0];
+  kr.forEach(p=>{ if(p.v<lo.v)lo=p; if(p.v>hi.v)hi=p; });
+  const last = kr[n-1];
+  const labelXY=(p)=>{ let x=p.x; x=Math.max(34,Math.min(VB_W-34,x)); return x; };
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="stroke" gradientUnits="userSpaceOnUse" x1="0" y1="${yOf(100)}" x2="0" y2="${yOf(0)}">
+        <stop offset="0" stop-color="${getCss('--grad-top')}"/>
+        <stop offset="0.5" stop-color="#e9c46a"/>
+        <stop offset="1" stop-color="${getCss('--grad-bot')}"/>
+      </linearGradient>
+      <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${zone(last.v).c}" stop-opacity="0.22"/>
+        <stop offset="1" stop-color="${zone(last.v).c}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${bg}
+    ${usLine}
+    ${bufLine}
+    <path d="${area}" fill="url(#fill)"/>
+    <path d="${linePath}" fill="none" stroke="url(#stroke)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+
+    <!-- 최고 -->
+    <circle cx="${hi.x}" cy="${hi.y}" r="3" fill="${getCss('--extreme-greed')}"/>
+    <text x="${labelXY(hi)}" y="${hi.y-9}" text-anchor="middle" fill="${getCss('--greed')}" font-size="11" font-family="IBM Plex Mono">최고 ${hi.v}</text>
+    <!-- 최저 -->
+    <circle cx="${lo.x}" cy="${lo.y}" r="3" fill="${getCss('--extreme-fear')}"/>
+    <text x="${labelXY(lo)}" y="${lo.y+17}" text-anchor="middle" fill="${getCss('--extreme-fear')}" font-size="11" font-family="IBM Plex Mono">최저 ${lo.v}</text>
+    <!-- 현재 -->
+    <circle cx="${last.x}" cy="${last.y}" r="4" fill="#fff"/>
+    <circle cx="${last.x}" cy="${last.y}" r="8" fill="${zone(last.v).c}" opacity="0.25"/>
+    ${bufAxis}
+
+    <rect id="hit" x="0" y="0" width="${VB_W}" height="${VB_H}" fill="transparent" style="cursor:crosshair"/>
+    <line id="guide" x1="0" y1="${PAD.t}" x2="0" y2="${PAD.t+plotH}" stroke="#fff" stroke-width="1" opacity="0"/>
+    <circle id="gdot" r="4" fill="#fff" opacity="0"/>
+  `;
+  bindHover(kr);
+  updateHeader();
+}
+
+function updateHeader(){
+  const last = DATA.kr[DATA.kr.length-1];
+  const prev = DATA.kr[DATA.kr.length-2] || last;
+  const z = zone(last.v);
+  document.getElementById('bigval').textContent = last.v;
+  const st = document.getElementById('state'); st.textContent = z.name; st.style.color = z.c;
+  document.getElementById('dot').style.background = z.c;
+  const diff = Math.round((last.v - prev.v)*10)/10;
+  const arrow = diff>0?'▲':diff<0?'▼':'–';
+  const col = diff>0?getCss('--greed'):diff<0?getCss('--extreme-fear'):getCss('--muted');
+  document.getElementById('change').innerHTML = `직전 대비 <b style="color:${col}">${arrow} ${Math.abs(diff)}</b>`;
+  document.getElementById('mk').style.left = `calc(${last.v}% - 1.5px)`;
+}
+
+/* ---------- 호버/터치 ---------- */
+function bindHover(kr){
+  const svg=document.getElementById('chart'), hit=document.getElementById('hit');
+  const guide=document.getElementById('guide'), gdot=document.getElementById('gdot');
+  const tip=document.getElementById('tip'), wrap=svg.parentElement;
+
+  function toIdx(clientX){
+    const r=svg.getBoundingClientRect();
+    const xv=(clientX-r.left)/r.width*VB_W;           // viewBox 좌표
+    const n=kr.length;
+    let i=Math.round((xv-PAD.l)/plotW*(n-1));
+    return Math.max(0,Math.min(n-1,i));
+  }
+  function move(clientX){
+    const i=toIdx(clientX), p=kr[i], z=zone(p.v);
+    guide.setAttribute('x1',p.x); guide.setAttribute('x2',p.x); guide.setAttribute('opacity','0.25');
+    gdot.setAttribute('cx',p.x); gdot.setAttribute('cy',p.y); gdot.setAttribute('opacity','1');
+    gdot.setAttribute('fill',z.c);
+    const r=svg.getBoundingClientRect();
+    const px=p.x/VB_W*r.width, py=p.y/VB_H*r.height;
+    tip.style.opacity='1';
+    tip.style.left=Math.max(50,Math.min(wrap.clientWidth-50,px))+'px';
+    tip.style.top=Math.max(0,py-64)+'px';
+    tip.innerHTML=`<div class="td">${p.d}</div><span class="tv">${p.v}</span><span class="ts" style="color:${z.c}">${z.name}</span>`;
+  }
+  function hide(){ guide.setAttribute('opacity','0'); gdot.setAttribute('opacity','0'); tip.style.opacity='0'; }
+
+  hit.addEventListener('mousemove', e=>move(e.clientX));
+  hit.addEventListener('mouseleave', hide);
+  hit.addEventListener('touchstart', e=>move(e.touches[0].clientX), {passive:true});
+  hit.addEventListener('touchmove', e=>move(e.touches[0].clientX), {passive:true});
+  hit.addEventListener('touchend', hide);
+}
+
+/* ---------- 컨트롤 ---------- */
+document.getElementById('tabs').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  windowDays = +b.dataset.d;
+  render();
+});
+document.getElementById('usbtn').addEventListener('click', e=>{
+  showUS=!showUS;
+  e.currentTarget.classList.toggle('on', showUS);
+  render();
+});
+document.getElementById('bufbtn').addEventListener('click', e=>{
+  showBUF=!showBUF;
+  e.currentTarget.classList.toggle('on', showBUF);
+  render();
+});
+
+/* ---------- 부팅: history.json 있으면 실제 데이터, 없으면 예시 ---------- */
+function boot(data){ DATA=data; render(); }
+function markReal(){
+  const n=document.getElementById('note');
+  if(n) n.innerHTML='<span class="badge" style="background:#10241a;color:#46a758;border-color:#1f5236">실제 데이터</span>'
+    + 'history.json 을 불러왔습니다. korea_fng.py 를 다시 실행하면 이 차트도 갱신됩니다.';
+}
+fetch('history.json')
+  .then(r => { if(!r.ok) throw new Error('no file'); return r.json(); })
+  .then(d => { boot(d); markReal(); })
+  .catch(() => boot(generateSample()));   // 파일이 없거나 file://로 직접 열면 예시로 대체
+</script>
+</body>
+</html>
