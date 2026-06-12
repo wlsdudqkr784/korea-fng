@@ -1,0 +1,1509 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>한국형 공포·탐욕지수 v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+  /* ── 라이트 테마(기본) ─────────────────────────────────────── */
+  :root{
+    --bg:#ffffff;
+    --panel:#f5f6f8;
+    --card:#ffffff;        /* 버튼/탭 등 떠 있는 면 */
+    --tip-bg:rgba(255,255,255,.97);
+    --ink:#1a1c20;
+    --ink-contrast:#ffffff; /* --ink 배경 위에 올라가는 글자색 */
+    --muted:#6b7280;
+    --faint:#e3e5e9;
+    --line:#e8eaed;
+    --extreme-fear:#dc2626;
+    --fear:#d97706;
+    --neutral:#9aa0a6;
+    --greed:#16a34a;
+    --extreme-greed:#15803d;
+    --risk:#ea580c;       /* 위험지수 라인 색 */
+    --buffett:#7c3aed;    /* 버핏/추세선 보조색 */
+    --us:#3b6fd4;         /* 미국 비교선 색 */
+    --fx:#0e9ab0;         /* 원/달러 환율 선 색 (청록) */
+    --up:#f04452;         /* 등락색 모드: 상승(토스 빨강) */
+    --down:#3182f6;       /* 등락색 모드: 하락(토스 파랑) */
+    --kospi:#b45309;      /* KOSPI 오버레이 선 색 (앰버) */
+    --grad-top:#16a34a;
+    --grad-bot:#dc2626;
+    --glow:none;
+  }
+  /* ── 다크 테마(미래지향) ───────────────────────────────────── */
+  :root[data-theme="dark"]{
+    --bg:#0a0e16;
+    --panel:#131927;
+    --card:#1a2133;
+    --tip-bg:rgba(19,25,39,.97);
+    --ink:#e9edf5;
+    --ink-contrast:#0a0e16;
+    --muted:#8d96ab;
+    --faint:#232c42;
+    --line:#1c2336;
+    --extreme-fear:#ff5c5c;
+    --fear:#ffb13d;
+    --neutral:#7a8499;
+    --greed:#2fd6a3;
+    --extreme-greed:#36e8b4;
+    --risk:#ff8a4d;
+    --buffett:#a78bfa;
+    --us:#5fa8ff;
+    --fx:#29d3e8;
+    --up:#ff5c6e;
+    --down:#4d8dff;
+    --kospi:#f5b942;
+    --grad-top:#2fd6a3;
+    --grad-bot:#ff5c5c;
+    --glow:0 0 26px rgba(120,170,255,.16);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'IBM Plex Sans KR',system-ui,sans-serif;}
+  body{
+    min-height:100vh;display:flex;justify-content:center;
+    background:
+      radial-gradient(120% 60% at 80% -10%, rgba(59,208,127,.06), transparent 60%),
+      radial-gradient(120% 60% at 0% 110%, rgba(229,72,77,.06), transparent 60%),
+      var(--bg);
+    transition:background-color .25s;
+  }
+  /* 다크 모드 전용 배경: 청록·보라 글로우 + 은은한 블루프린트 격자 */
+  :root[data-theme="dark"] body{
+    background:
+      linear-gradient(rgba(120,150,200,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,150,200,.045) 1px, transparent 1px),
+      radial-gradient(90% 55% at 85% -5%, rgba(41,211,232,.10), transparent 60%),
+      radial-gradient(90% 55% at 0% 105%, rgba(167,139,250,.10), transparent 60%),
+      var(--bg);
+    background-size:28px 28px, 28px 28px, auto, auto, auto;
+  }
+  .app{width:100%;max-width:480px;padding:26px 22px 34px;}
+
+  .toprow{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  header .eyebrow{font-size:13px;letter-spacing:.04em;color:var(--muted);
+    display:flex;align-items:center;gap:7px;font-weight:500}
+  header .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--fear);
+    box-shadow:0 0 10px currentColor}
+  .themebtn{border:1px solid var(--faint);background:var(--card);color:var(--muted);
+    font-family:'IBM Plex Sans KR';font-size:11.5px;font-weight:600;padding:5px 10px;
+    border-radius:99px;cursor:pointer;transition:.15s;white-space:nowrap}
+  .themebtn:active{transform:scale(.96)}
+  .value{font-family:'Fraunces',serif;font-weight:600;letter-spacing:-.02em;
+    font-size:76px;line-height:.96;margin:10px 0 2px;font-variant-numeric:tabular-nums;
+    text-shadow:var(--glow)}
+  .staterow{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .state{font-size:20px;font-weight:600}
+  .change{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--muted)}
+  .change b{font-weight:500}
+
+  .gauge{position:relative;height:8px;border-radius:99px;margin:18px 0 4px;overflow:hidden;
+    background:linear-gradient(90deg,var(--extreme-fear),var(--fear) 32%,var(--neutral) 50%,var(--greed) 70%,var(--extreme-greed));}
+  .gauge .mk{position:absolute;top:-4px;width:3px;height:16px;border-radius:2px;background:var(--ink);
+    box-shadow:0 0 0 2px var(--bg);transition:left .5s cubic-bezier(.2,.8,.2,1)}
+  .gaugelabels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;margin-top:6px}
+
+  /* 보조 박스: 위험지수 + 버핏지수 + 환율 */
+  .subrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .subbox{background:var(--panel);border:1px solid var(--faint);border-radius:12px;padding:12px 13px;
+    transition:background-color .25s,border-color .25s}
+  .subbox .lbl{font-size:11px;color:var(--muted);letter-spacing:.02em;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .subbox .lbl .sw{width:10px;height:3px;border-radius:2px;display:inline-block}
+  .subbox .val{font-family:'Fraunces',serif;font-weight:600;font-size:28px;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums}
+  .subbox .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .subbox.risk .val{color:var(--risk)}
+  .subbox.buffett .val{color:var(--buffett)}
+  .subbox.fx{grid-column:1/-1}
+  .subbox.fx .val{color:var(--fx)}
+  .subbox.fx .fxrow{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .subbox.fx .chg{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
+
+  /* tabs */
+  .tabs{display:flex;gap:4px;margin:22px 0 6px;background:var(--panel);padding:4px;border-radius:12px}
+  .tabs button{flex:1;border:0;background:transparent;color:var(--muted);
+    font-family:'IBM Plex Sans KR';font-size:13px;font-weight:600;padding:9px 0;border-radius:9px;
+    cursor:pointer;transition:.18s}
+  .tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .tabs button:active{transform:scale(.97)}
+
+  .chartwrap{position:relative;margin-top:8px}
+  .infobar{display:flex;gap:4px 12px;flex-wrap:wrap;align-items:baseline;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+    margin:6px 2px 0;min-height:16px;font-variant-numeric:tabular-nums}
+  .infobar b{color:var(--ink);font-weight:500}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .tip{position:absolute;pointer-events:none;opacity:0;
+    background:var(--tip-bg);border:1px solid var(--faint);border-radius:9px;padding:6px 9px;
+    font-size:11.5px;white-space:nowrap;transition:opacity .12s;z-index:5;
+    box-shadow:0 6px 18px rgba(0,0,0,.14);backdrop-filter:blur(2px)}
+  .tip .td{color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10px;margin-bottom:3px}
+  .tip .row{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums;line-height:1.5}
+  .tip .row .k{color:var(--muted);font-size:10.5px}
+  .tip .row .v{font-weight:700;font-size:12px;display:flex;align-items:baseline;gap:5px}
+  .tip .row .v .zn{font-size:9.5px;font-weight:500;opacity:.85}
+
+  #chart{cursor:crosshair}
+
+  .controls{display:flex;justify-content:space-between;align-items:center;margin-top:16px;flex-wrap:wrap;gap:10px}
+  .legend{display:flex;gap:7px;flex-wrap:wrap}
+  .chip{display:flex;align-items:center;gap:6px;border:1px solid var(--faint);background:var(--card);color:var(--muted);
+    font-family:'IBM Plex Sans KR';font-size:12px;font-weight:600;padding:6px 11px;border-radius:99px;cursor:pointer;transition:.15s}
+  .chip .sw{width:14px;height:3px;border-radius:2px;display:inline-block;opacity:.3;transition:.15s}
+  .chip.on{color:var(--ink);border-color:#cfd2d8;background:var(--panel)}
+  :root[data-theme="dark"] .chip.on{border-color:#3a4663}
+  .chip.on .sw{opacity:1}
+  .chip:active{transform:scale(.97)}
+  .chip.disabled{opacity:.35;pointer-events:none}
+  .tools{display:flex;gap:6px;flex-wrap:wrap}
+  .tbtn{border:1px solid var(--faint);background:var(--card);color:var(--muted);font-family:'IBM Plex Sans KR';
+    font-size:12px;font-weight:600;padding:6px 11px;border-radius:9px;cursor:pointer;transition:.15s}
+  .tbtn.on{color:var(--ink-contrast);background:var(--ink);border-color:var(--ink)}
+  .tbtn:active{transform:scale(.97)}
+  .hint{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.6}
+  .hint b{color:var(--ink);font-weight:600}
+
+  footer{margin-top:24px;font-size:12px;color:var(--muted);line-height:1.65;
+    border-top:1px solid var(--faint);padding-top:14px}
+
+  /* ── 분석 섹션 ── */
+  .anal{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+  .abox{background:var(--panel);border:1px solid var(--faint);border-radius:12px;padding:12px 13px;
+    transition:background-color .25s,border-color .25s}
+  .ahead{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:8px}
+  .amut{font-weight:400;color:var(--muted);font-size:10.5px}
+  .asub{font-size:11px;color:var(--muted);line-height:1.6}
+  .astat{font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.6}
+  .astat b{font-family:'IBM Plex Mono',monospace;font-weight:600}
+  .abox svg{display:block;width:100%;height:auto}
+  .cgrp{margin-bottom:10px}
+  .cghead{font-size:11.5px;color:var(--muted);margin:6px 0}
+  .cghead b{font-family:'IBM Plex Mono',monospace;color:var(--ink)}
+  .crow{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:11px}
+  .crow .cn{width:72px;color:var(--ink);flex:none}
+  .crow .cbar{flex:1;height:7px;background:var(--faint);border-radius:99px;overflow:hidden}
+  .crow .cbar i{display:block;height:100%;border-radius:99px}
+  .crow .cv{font-family:'IBM Plex Mono',monospace;color:var(--ink);flex:none;font-size:10.5px}
+  .crow .cv em{font-style:normal;color:var(--muted)}
+  .ztab{width:100%;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+  .ztab th{font-weight:600;color:var(--muted);text-align:right;padding:4px 2px;
+    border-bottom:1px solid var(--faint);font-size:10.5px}
+  .ztab th:first-child,.ztab td:first-child{text-align:left}
+  .ztab td{padding:5px 2px;text-align:right;border-bottom:1px solid var(--faint);
+    font-family:'IBM Plex Mono',monospace}
+  .ztab td:first-child{font-family:'IBM Plex Sans KR'}
+  .ztab tr.me td{background:var(--card)}
+  .zsw{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  .alertstrip{display:none;margin-top:12px;padding:8px 11px;border-radius:10px;background:var(--panel);
+    border:1px solid var(--faint);border-left:3px solid var(--fear);font-size:12px;color:var(--ink);line-height:1.5}
+  .alertstrip.show{display:block}
+  footer b{color:var(--ink);font-weight:600}
+  footer .row{margin:6px 0}
+  .badge{display:inline-block;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;
+    font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:6px;margin-right:6px}
+  .badge.live{background:#ecfdf5;color:#15803d;border-color:#a7f3d0}
+  :root[data-theme="dark"] .badge{background:#2a2113;color:#ffb13d;border-color:#4a3a1c}
+  :root[data-theme="dark"] .badge.live{background:#0e2a22;color:#36e8b4;border-color:#1d4a3c}
+
+  /* ══════════════════════════════════════════════════════════════
+     와이드 모드 — 독립 페이지(standalone) + 1000px 이상에서만.
+     토스증권처럼 [좌: 큰 차트] + [우: 헤더 패널(주문창 자리)] 2열,
+     분석 카드는 그 아래 전체 폭. 노션 임베드(html.embed)는 미적용(세로 유지).
+     ────────────────────────────────────────────────────────────── */
+  @media (min-width:1000px){
+    html.standalone .app{
+      max-width:1600px;
+      display:grid;
+      grid-template-columns:min(calc(82vh * 480 / 380), calc(100% - 388px)) 360px;
+      grid-auto-flow:row;
+      column-gap:28px; row-gap:0;
+      align-items:start;
+      justify-content:start;   /* 좌측 정렬 — 차트와 헤더를 왼쪽에 모음 */
+    }
+    /* 헤더(큰 숫자·게이지·카드)는 우측 2열 1행. sticky로 스크롤 시 따라옴.
+       grid-row를 확장하지 않아야 .anal·footer의 전체폭 배치와 충돌하지 않는다. */
+    html.standalone .app > header{
+      grid-column:2; grid-row:1;
+      position:sticky; top:26px; align-self:start;
+      margin-bottom:0;
+    }
+    /* 차트 영역(탭·정보바·차트·컨트롤·힌트)은 좌측 1열에 순서대로.
+       좌측 열 자체가 차트 폭이므로 100%로 꽉 채우면 셋이 자동 정렬된다. */
+    html.standalone .app > .tabs,
+    html.standalone .app > .infobar,
+    html.standalone .app > .chartwrap,
+    html.standalone .app > .controls,
+    html.standalone .app > .hint{
+      grid-column:1;
+      width:100%; max-width:100%;
+    }
+    html.standalone .app > .tabs{ margin-top:0; margin-bottom:6px; }
+    html.standalone .app > .infobar{ margin-top:0; }
+    html.standalone .app > .chartwrap{ margin-top:6px; }   /* 탭·정보바와 바짝 */
+
+    /* 분석 카드와 푸터는 차트 아래, 2열 전체 폭으로 */
+    html.standalone .app > .anal,
+    html.standalone .app > footer{ grid-column:1 / -1; }
+
+    /* 우측 헤더 패널이 좁으므로(360px) 3개 카드는 세로 스택 */
+    html.standalone .subrow{ grid-template-columns:1fr; }
+
+    html.standalone .tip{ font-size:12px; }
+
+    /* 분석 패널: 하단 전체 폭이므로 가로 4분할 */
+    html.standalone .anal{
+      display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
+    }
+  }
+  /* 중간 폭(1000~1400)에서는 분석 패널 2×2가 더 읽기 좋음 */
+  @media (min-width:1000px) and (max-width:1400px){
+    html.standalone .anal{ grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<script>
+  /* 와이드 모드 판별용: 노션 임베드(iframe) 안인지, 독립 페이지인지 표시.
+     cross-origin이면 window.top 접근에서 예외가 나므로 그 경우도 임베드로 간주. */
+  (function(){
+    var embedded;
+    try { embedded = (window.self !== window.top); }
+    catch (_) { embedded = true; }
+    document.documentElement.classList.add(embedded ? 'embed' : 'standalone');
+  })();
+</script>
+<div class="app">
+  <header>
+    <div class="toprow">
+      <div class="eyebrow"><span class="dot" id="dot"></span> 한국형 공포·탐욕지수 <span style="opacity:.5">· KOSPI v2</span></div>
+      <div style="display:flex;gap:6px">
+        <button class="themebtn" id="notifBtn">알림</button>
+        <button class="themebtn" id="themeBtn">☾ 다크</button>
+      </div>
+    </div>
+    <div class="value" id="bigval">–</div>
+    <div class="staterow">
+      <div class="state" id="state">–</div>
+      <div class="change" id="change"></div>
+    </div>
+    <div class="alertstrip" id="alertStrip"></div>
+    <div class="gauge"><div class="mk" id="mk"></div></div>
+    <div class="gaugelabels"><span>0 극단적 공포</span><span>50</span><span>극단적 탐욕 100</span></div>
+
+    <!-- 위험지수 + 버핏지수 + 환율 -->
+    <div class="subrow">
+      <div class="subbox risk">
+        <div class="lbl"><span class="sw" style="background:var(--risk)"></span>위험지수 <span style="opacity:.5">(높을수록 불안정)</span></div>
+        <div class="val" id="riskval">–</div>
+        <div class="sub" id="risksub">–</div>
+      </div>
+      <div class="subbox buffett">
+        <div class="lbl"><span class="sw" style="background:var(--buffett)"></span>버핏지수 <span style="opacity:.5">시총÷GDP</span></div>
+        <div class="val" id="bufval">–</div>
+        <div class="sub" id="bufsub">–</div>
+      </div>
+      <div class="subbox fx">
+        <div class="lbl"><span class="sw" style="background:var(--fx)"></span>원/달러 환율 <span style="opacity:.5">(상승 = 원화 약세 = 공포 방향)</span></div>
+        <div class="fxrow">
+          <div class="val" id="fxval">–</div>
+          <div class="chg" id="fxchg"></div>
+        </div>
+        <div class="sub" id="fxsub">–</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button data-d="7">1주</button>
+    <button data-d="30">1개월</button>
+    <button data-d="90">3개월</button>
+    <button data-d="365" class="on">1년</button>
+    <button data-d="0">전체</button>
+  </div>
+
+  <div class="infobar" id="infobar"></div>
+
+  <div class="chartwrap">
+    <svg id="chart" viewBox="0 0 480 380"></svg>
+    <div class="tip" id="tip"></div>
+  </div>
+
+  <div class="controls">
+    <div class="legend" id="legend">
+      <button class="chip on" data-s="kr"><i class="sw" style="background:linear-gradient(90deg,var(--extreme-fear),#e9c46a,var(--greed))"></i>탐욕지수</button>
+      <button class="chip on" data-s="risk"><i class="sw" style="background:var(--risk)"></i>위험지수</button>
+      <button class="chip on" data-s="fx"><i class="sw" style="background:var(--fx)"></i>환율</button>
+      <button class="chip" data-s="kospi"><i class="sw" style="background:var(--kospi)"></i>KOSPI</button>
+      <button class="chip" data-s="ma"><i class="sw" style="background:var(--muted)"></i>20일 평균</button>
+      <button class="chip" data-s="us"><i class="sw" style="background:var(--us)"></i>미국 비교</button>
+      <button class="chip on" data-s="ev"><i class="sw" style="background:var(--buffett)"></i>이벤트</button>
+    </div>
+    <div class="tools" id="tools">
+      <button class="tbtn" id="styleToggle">등락색</button>
+      <button class="tbtn" id="clearTrend">측정선 지우기</button>
+    </div>
+  </div>
+  <div class="hint" id="hint">
+    그래프의 <b>선을 탭(클릭)</b>하면 점·정보바가 그 선을 따라갑니다(◉ 표시). ·
+    <b>드래그</b>하면 두 시점을 잇는 측정선이 그려지고 <b>상승/하락 폭·변화율·기간</b>이 라벨로 남습니다(<b>측정선 지우기</b>로 삭제). ·
+    <b>등락색</b>: 상승=빨강/하락=파랑 · 환율·KOSPI는 <b>오른쪽 보조축</b> 기준 ·
+    <b>이벤트</b> 깃발은 파일 상단 EVENTS 배열을 직접 수정해 추가/삭제합니다.
+  </div>
+
+  <!-- ── 분석 섹션 ─────────────────────────────────────────── -->
+  <div class="anal" id="analytics">
+    <div class="abox">
+      <div class="ahead">분포 · 현재 위치</div>
+      <div class="astat" id="distStat">–</div>
+      <svg id="histChart" viewBox="0 0 436 120"></svg>
+    </div>
+    <div class="abox">
+      <div class="ahead">향후 30일 통계 경로 <span class="amut">— 예측이 아니라 과거 같은 구간의 평균</span></div>
+      <svg id="bandChart" viewBox="0 0 436 140"></svg>
+      <div class="asub" id="pathSub" style="margin-top:6px">–</div>
+    </div>
+    <div class="abox">
+      <div class="ahead">오늘 지표별 기여도 <span class="amut">— 가중치는 그날 유효 지표로 재정규화</span></div>
+      <div id="compBars"></div>
+    </div>
+    <div class="abox">
+      <div class="ahead">구간별 KOSPI 평균 수익률 <span class="amut">— 그 구간이던 날 매수 후 보유 시</span></div>
+      <div id="zoneTable"></div>
+    </div>
+  </div>
+
+  <footer id="note">
+    <span class="badge">예시 데이터</span>같은 폴더에 <b>history.json</b>(korea_fng.py 실행 결과)을 두고 호스팅하면 실제 지수로 바뀝니다.
+    <div class="row" style="margin-top:10px"><b>탐욕지수</b>: 가격이 얼마나 달리는지 (0~100, 높을수록 과열)</div>
+    <div class="row"><b>위험지수</b>: 시장이 얼마나 흔들리는지 (0~100, 높을수록 위험)</div>
+    <div class="row"><b>버핏지수</b>: 코스피+코스닥 시가총액을 한국 GDP로 나눈 비율 (%). 100%면 시장 = 1년 경제 규모.</div>
+    <div class="row"><b>환율</b>: 원/달러 실제값(원). 오를수록 원화 약세 = 공포 방향. 우측 청록 축.</div>
+    <div class="row"><b>KOSPI</b>: 코스피 종가 오버레이(우측 앰버 축). 지수와의 선행·후행 비교용.</div>
+    <div class="row"><b>이벤트</b>: 보라 깃발. 파일 상단 EVENTS 배열 또는 events.json으로 관리.</div>
+  </footer>
+</div>
+
+<script>
+/* =========================================================================
+   history.json 형식 (v2.2):
+     { "kr"  : [{"d":"YYYY-MM-DD","v":number}, ...],   // 탐욕지수 (0~100)
+       "risk": [{"d":"YYYY-MM-DD","v":number}, ...],   // 위험지수 (선택)
+       "us"  : [{"d":"YYYY-MM-DD","v":number|null}],   // 미국 CNN (선택)
+       "fx"  : [{"d":"YYYY-MM-DD","v":number|null}],   // 원/달러 원시값 (선택)
+       "kospi": [{"d":"YYYY-MM-DD","v":number|null}],  // KOSPI 종가 (선택)
+       "components": { "greed":{"d","items":[{n,w,v}]}, "risk":{...} }, // 오늘 기여도 (선택)
+       "buffett": {"d":"...","ratio":246.0,"score":100.0} // 오늘값 (선택)
+     }
+   위 선택 키가 없으면 그 부분만 자동으로 숨겨진다.
+   fx/kospi/components 는 korea_fng.py 새 버전 실행 후부터 생성된다.
+   ========================================================================= */
+
+/* ════════════ 이벤트 마커 — 직접 편집 구역 ═══════════════════
+   아래 배열에 한 줄씩 추가/삭제하면 차트에 보라색 깃발로 표시됩니다.
+   형식: { d:"YYYY-MM-DD", t:"라벨" }   (휴장일이면 다음 거래일 위치에 찍힘)
+   같은 폴더에 events.json([{"d":"...","t":"..."}])을 두면 자동으로 합쳐집니다.
+   ▼▼▼ 여기부터 편집 ▼▼▼ */
+const EVENTS = [
+  { d:"2026-01-28", t:"FOMC" },
+  { d:"2026-03-18", t:"FOMC" },
+  { d:"2026-04-29", t:"FOMC" },
+  { d:"2026-06-17", t:"FOMC" },
+  { d:"2026-07-29", t:"FOMC" },
+  { d:"2026-09-16", t:"FOMC" },
+  { d:"2026-10-28", t:"FOMC" },
+  { d:"2026-12-09", t:"FOMC" },
+];
+/* ▲▲▲ 여기까지 편집 ▲▲▲ ═════════════════════════════════════ */
+let EXTRA_EVENTS = [];
+function allEvents(){
+  const seen = new Set(), out = [];
+  EVENTS.concat(EXTRA_EVENTS).forEach(ev=>{
+    if(!ev || !ev.d || !ev.t) return;
+    const k = ev.d + '|' + ev.t;
+    if(!seen.has(k)){ seen.add(k); out.push(ev); }
+  });
+  return out;
+}
+
+function generateSample(){
+  let s = 20260531;
+  const rnd = () => (s = (s*1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  function walk(seed, mean){
+    s = seed; let v = mean, out = [];
+    const start = new Date('2023-01-01'), end = new Date();
+    let t = 0;
+    for(let dt = new Date(start); dt <= end; dt.setDate(dt.getDate()+1)){
+      const wd = dt.getDay();
+      if(wd === 0 || wd === 6) continue;
+      t++;
+      const regime = 12 * Math.sin(t/120) + 6 * Math.sin(t/37);
+      const drift  = (mean + regime - v) * 0.05;
+      const shock  = (rnd() - 0.5) * 7;
+      v = clamp(v + drift + shock, 3, 97);
+      out.push({ d: dt.toISOString().slice(0,10), v: Math.round(v*10)/10 });
+    }
+    return out;
+  }
+  function walkFX(seed){
+    s = seed; let v = 1350, out = [];
+    const start = new Date('2023-01-01'), end = new Date();
+    let t = 0;
+    for(let dt = new Date(start); dt <= end; dt.setDate(dt.getDate()+1)){
+      const wd = dt.getDay();
+      if(wd === 0 || wd === 6) continue;
+      t++;
+      const regime = 55 * Math.sin(t/160) + 25 * Math.sin(t/45);
+      const drift  = (1360 + regime - v) * 0.04;
+      const shock  = (rnd() - 0.5) * 9;
+      v = clamp(v + drift + shock, 1270, 1490);
+      out.push({ d: dt.toISOString().slice(0,10), v: Math.round(v*10)/10 });
+    }
+    return out;
+  }
+  function walkKospi(seed){
+    s = seed; let v = 2450, out = [];
+    const start = new Date('2023-01-01'), end = new Date();
+    let t = 0;
+    for(let dt = new Date(start); dt <= end; dt.setDate(dt.getDate()+1)){
+      const wd = dt.getDay();
+      if(wd === 0 || wd === 6) continue;
+      t++;
+      const drift  = 0.55 + 6 * Math.sin(t/140) * 0.04;
+      const shock  = (rnd() - 0.5) * 26;
+      v = clamp(v + drift + shock, 2150, 3450);
+      out.push({ d: dt.toISOString().slice(0,10), v: Math.round(v*100)/100 });
+    }
+    return out;
+  }
+  return {
+    kr  : walk(11, 70),         // 탐욕 (요즘 장세 가정)
+    risk: walk(91, 65),         // 위험
+    us  : walk(73, 58),
+    fx  : walkFX(37),           // 원/달러
+    kospi: walkKospi(53),       // KOSPI 종가
+    components: {
+      greed: { d:'2026-05-31', items:[
+        {n:'외국인수급', w:0.30, v:62.0}, {n:'모멘텀', w:0.25, v:71.5},
+        {n:'시장폭', w:0.25, v:55.0},   {n:'신용융자', w:0.20, v:80.2} ]},
+      risk:  { d:'2026-05-31', items:[
+        {n:'변동성', w:0.50, v:58.0}, {n:'환율', w:0.25, v:64.0},
+        {n:'안전자산이탈', w:0.25, v:49.0} ]}
+    },
+    buffett: { d:'2026-05-31', ratio: 246.0, score: 100.0 }
+  };
+}
+
+function zone(v){
+  if(v < 25) return {name:'극단적 공포', c:getCss('--extreme-fear')};
+  if(v < 45) return {name:'공포',       c:getCss('--fear')};
+  if(v < 55) return {name:'중립',       c:getCss('--neutral')};
+  if(v < 75) return {name:'탐욕',       c:getCss('--greed')};
+  return        {name:'극단적 탐욕', c:getCss('--extreme-greed')};
+}
+/* 분석 루프용: zone()과 같은 경계지만 CSS 조회가 없어 수천 번 호출해도 가볍다 */
+function zoneName(v){
+  return v<25?'극단적 공포':v<45?'공포':v<55?'중립':v<75?'탐욕':'극단적 탐욕';
+}
+function riskLabel(v){
+  if(v == null) return '–';
+  if(v < 25) return '매우 안정';
+  if(v < 45) return '안정';
+  if(v < 55) return '보통';
+  if(v < 75) return '주의';
+  return '위험';
+}
+function buffettLabel(r){
+  if(r == null) return '–';
+  if(r < 70)  return '저평가 구간';
+  if(r < 90)  return '약간 저평가';
+  if(r < 110) return '적정 부근';
+  if(r < 130) return '고평가';
+  return '극단 고평가';
+}
+function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function fmtKRW(v){ return v==null ? '–' : Number(v).toLocaleString('ko-KR', {maximumFractionDigits:1}); }
+
+const VB_W = 480, VB_H = 380;
+const PAD = {l:8, r:8, t:26, b:24};
+const plotW = VB_W - PAD.l - PAD.r;
+const plotH = VB_H - PAD.t - PAD.b;
+const yOf = v => PAD.t + (1 - v/100) * plotH;
+
+let DATA = null;
+let windowDays = 365;
+let showKR = true, showRisk = true, showUS = false, showFX = true, showMA = false;
+let showKospi = false, showEvents = true;
+let viewKR = [], viewRisk = [];
+let CUR = { kr:[], risk:[], us:[], fx:[], kospi:[], ma:[], eventsAt:{} };  // 현재 화면에 그려진 점 좌표(x,y,v,d) 캐시
+let tracked = 'kr';                     // 마지막에 누른(추적 중인) 시리즈 키
+let lineStyle = 'zone';                 // 'zone'(구간 그라데이션) | 'updown'(토스식 등락색)
+let trendlines = [];                    // 측정선들 [{key,d0,d1}] — 날짜 앵커라 기간 전환에도 유지
+let INFOBAR_DEFAULT = '';               // 호버에서 벗어나면 복원할 구간 요약
+
+/* 방향에 따른 색: 기본은 초록(상승)/빨강(하락) 의미색,
+   등락색 모드에선 한국 증권앱 관행대로 상승=빨강/하락=파랑 */
+function dirColor(d){
+  if(d > 0) return getCss(lineStyle==='updown' ? '--up'   : '--greed');
+  if(d < 0) return getCss(lineStyle==='updown' ? '--down' : '--extreme-fear');
+  return getCss('--muted');
+}
+function fmtDateShort(d){ const [y,m,dd]=String(d).split('-'); return `${y.slice(2)}.${m}.${dd}`; }
+
+function sliceWindow(arr){
+  if(!windowDays || !arr) return arr ? arr.slice() : [];
+  return arr.slice(Math.max(0, arr.length - windowDays));
+}
+
+function smoothPath(pts){
+  if(pts.length < 2) return '';
+  let d = `M ${pts[0].x},${pts[0].y}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||p2;
+    const c1x=p1.x+(p2.x-p0.x)/6, c1y=p1.y+(p2.y-p0.y)/6;
+    const c2x=p2.x-(p3.x-p1.x)/6, c2y=p2.y-(p3.y-p1.y)/6;
+    d += ` C ${c1x},${c1y} ${c2x},${c2y} ${p2.x},${p2.y}`;
+  }
+  return d;
+}
+
+function ptsFrom(arr){
+  const n = arr.length;
+  return arr.map((o,i)=>({ x: PAD.l + (n<=1?0:(i/(n-1))*plotW), y: yOf(o.v), v:o.v, d:o.d }));
+}
+
+/* 환율: 0~100이 아니라 1,300~1,480원 같은 실제값이므로
+   '보이는 구간'의 min/max로 우측 보조축 스케일을 매번 새로 잡는다. */
+function fxPtsFrom(arr){
+  const n = arr.length;
+  if(!n) return { pts:[], min:null, max:null, yOfFx:null };
+  let mn = Infinity, mx = -Infinity;
+  arr.forEach(o => { if(o.v != null && !isNaN(o.v)){ if(o.v < mn) mn = o.v; if(o.v > mx) mx = o.v; } });
+  if(!isFinite(mn)){   // 구간 내 전부 null
+    return { pts: arr.map((o,i)=>({ x: PAD.l+(n<=1?0:(i/(n-1))*plotW), y:null, v:o.v, d:o.d })),
+             min:null, max:null, yOfFx:null };
+  }
+  if(mx - mn < 1){ mn -= 5; mx += 5; }          // 거의 평평한 구간 보호
+  const padV = (mx - mn) * 0.06;                 // 위아래 6% 여백
+  mn -= padV; mx += padV;
+  const yOfFx = v => PAD.t + (1 - (v - mn)/(mx - mn)) * plotH;
+  return {
+    pts: arr.map((o,i)=>({
+      x: PAD.l + (n<=1?0:(i/(n-1))*plotW),
+      y: (o.v==null || isNaN(o.v)) ? null : yOfFx(o.v),
+      v: o.v, d: o.d })),
+    min: mn, max: mx, yOfFx
+  };
+}
+
+/* 탐욕지수 20일 단순이동평균 (전체 이력에서 계산 후 창 슬라이스) */
+function ma20Full(arr){
+  const out = []; const q = []; let sum = 0;
+  for(let i=0;i<arr.length;i++){
+    q.push(arr[i].v); sum += arr[i].v;
+    if(q.length > 20) sum -= q.shift();
+    out.push({ d: arr[i].d, v: q.length === 20 ? Math.round(sum/20*10)/10 : null });
+  }
+  return out;
+}
+
+function render(){
+  const svg = document.getElementById('chart');
+  viewKR = sliceWindow(DATA.kr);
+  viewRisk = sliceWindow(DATA.risk);
+  const kr = ptsFrom(viewKR);
+  const n = kr.length;
+  if(!n){ svg.innerHTML=''; return; }
+
+  // 위험·미국·환율·MA 점 좌표도 같은 타임라인(x축) 위에서 계산 → 호버/측정에서 동일 인덱스로 참조
+  const riskPts = (viewRisk && viewRisk.length) ? ptsFrom(viewRisk) : [];
+  let usPts = [];
+  if(DATA.us){
+    const usArr = sliceWindow(DATA.us);
+    const n2 = usArr.length;
+    usPts = usArr.map((o,i)=>({
+      x: PAD.l + (n2<=1?0:(i/(n2-1))*plotW),
+      y: (o.v==null||isNaN(o.v)) ? null : yOf(o.v), v:o.v, d:o.d
+    }));
+  }
+  let fxView = { pts:[], min:null, max:null };
+  if(DATA.fx){
+    fxView = fxPtsFrom(sliceWindow(DATA.fx));
+  }
+  let kospiView = { pts:[], min:null, max:null };
+  if(DATA.kospi){
+    kospiView = fxPtsFrom(sliceWindow(DATA.kospi));   // 동일한 구간 min/max 스케일러 재사용
+  }
+  let maPts = [];
+  if(DATA.kr && DATA.kr.length){
+    const maArr = sliceWindow(ma20Full(DATA.kr));
+    maPts = maArr.map((o,i)=>({
+      x: PAD.l + (maArr.length<=1?0:(i/(maArr.length-1))*plotW),
+      y: (o.v==null) ? null : yOf(o.v), v:o.v, d:o.d
+    }));
+  }
+  CUR = { kr, risk:riskPts, us:usPts, fx:fxView.pts, kospi:kospiView.pts, ma:maPts, eventsAt:{} };   // 상호작용 핸들러가 참조
+
+  // 배경 밴드 + 기준선
+  const bands = [[0,25,'--extreme-fear'],[25,45,'--fear'],[45,55,'--neutral'],[55,75,'--greed'],[75,100,'--extreme-greed']];
+  let bg = bands.map(([lo,hi,c])=>{
+    const y=yOf(hi), h=yOf(lo)-yOf(hi);
+    return `<rect x="0" y="${y}" width="${VB_W}" height="${h}" fill="${getCss(c)}" opacity="0.06"/>`;
+  }).join('');
+  [25,50,75].forEach(g=>{
+    bg += `<line x1="0" y1="${yOf(g)}" x2="${VB_W}" y2="${yOf(g)}" stroke="${getCss('--faint')}" stroke-width="1" stroke-dasharray="2 4"/>`;
+  });
+
+  // 미국 비교선 (토글)
+  let usLine = '';
+  if(showUS && usPts.length){
+    const u = usPts.filter(p => p.y != null);
+    if(u.length > 1)
+      usLine = `<path d="${smoothPath(u)}" fill="none" stroke="${getCss('--us')}" stroke-width="1.6" stroke-dasharray="3 4" opacity="0.85"/>`;
+  }
+
+  // 위험지수 선 (토글)
+  let riskLine = '';
+  if(showRisk && riskPts.length){
+    const rPts = riskPts.filter(p => p.v != null && !isNaN(p.v));
+    if(rPts.length > 1)
+      riskLine = `<path d="${smoothPath(rPts)}" fill="none" stroke="${getCss('--risk')}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>`;
+  }
+
+  // 환율 선 + 우측 보조축 눈금 (토글)
+  let fxLine = '', fxAxis = '';
+  if(showFX && fxView.pts.length && fxView.min != null){
+    const f = fxView.pts.filter(p => p.y != null);
+    if(f.length > 1){
+      fxLine = `<path d="${smoothPath(f)}" fill="none" stroke="${getCss('--fx')}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>`;
+      const mid = (fxView.min + fxView.max) / 2;
+      const ticks = [
+        { v: fxView.max, y: PAD.t + 10 },
+        { v: mid,        y: PAD.t + plotH/2 + 3 },
+        { v: fxView.min, y: PAD.t + plotH - 3 },
+      ];
+      fxAxis = ticks.map(t =>
+        `<text x="${VB_W-2}" y="${t.y}" text-anchor="end" fill="${getCss('--fx')}" opacity="0.78" font-size="9.5" font-family="IBM Plex Mono">${fmtKRW(Math.round(t.v))}</text>`
+      ).join('');
+    }
+  }
+
+  // KOSPI 선 + 우측 보조축 눈금 (토글). 환율 눈금이 켜져 있으면 11px 어긋나게 배치.
+  let kospiLine = '', kospiAxis = '';
+  if(showKospi && kospiView.pts.length && kospiView.min != null){
+    const kk = kospiView.pts.filter(p => p.y != null);
+    if(kk.length > 1){
+      kospiLine = `<path d="${smoothPath(kk)}" fill="none" stroke="${getCss('--kospi')}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>`;
+      const both = (showFX && fxView.min != null);
+      const midK = (kospiView.min + kospiView.max) / 2;
+      const ticksK = [
+        { v: kospiView.max, y: PAD.t + 10 + (both ? 11 : 0) },
+        { v: midK,          y: PAD.t + plotH/2 + 3 + (both ? 11 : 0) },
+        { v: kospiView.min, y: PAD.t + plotH - 3 - (both ? 11 : 0) },
+      ];
+      kospiAxis = ticksK.map(t =>
+        `<text x="${VB_W-2}" y="${t.y}" text-anchor="end" fill="${getCss('--kospi')}" opacity="0.85" font-size="9.5" font-family="IBM Plex Mono">${fmtKRW(Math.round(t.v))}</text>`
+      ).join('');
+    }
+  }
+
+  // 20일 이동평균선 (토글)
+  let maLine = '';
+  if(showMA && maPts.length){
+    const m = maPts.filter(p => p.y != null);
+    if(m.length > 1)
+      maLine = `<path d="${smoothPath(m)}" fill="none" stroke="${getCss('--ink')}" stroke-width="1.4" stroke-dasharray="5 4" stroke-linecap="round" opacity="0.5"/>`;
+  }
+
+  // 탐욕지수 영역+선 (토글) + 최고/최저/현재 마커
+  let krLayer = '', extrema = '';
+  const last = kr[n-1];
+  if(showKR){
+    if(lineStyle === 'updown'){
+      // 토스식 등락색: 직전 대비 상승 구간 빨강, 하락 구간 파랑 (직선 세그먼트, 면 채움 없음)
+      let upD='', downD='', flatD='';
+      for(let i=1;i<n;i++){
+        const a=kr[i-1], b=kr[i];
+        const seg=`M ${a.x},${a.y} L ${b.x},${b.y} `;
+        if(b.v > a.v) upD += seg; else if(b.v < a.v) downD += seg; else flatD += seg;
+      }
+      const segPath=(d,c)=> d ? `<path d="${d}" fill="none" stroke="${c}" stroke-width="1.7" stroke-linecap="round"/>` : '';
+      krLayer = segPath(downD, getCss('--down')) + segPath(flatD, getCss('--neutral')) + segPath(upD, getCss('--up'));
+    } else {
+      const linePath = smoothPath(kr);
+      const area = linePath + ` L ${kr[n-1].x},${yOf(0)} L ${kr[0].x},${yOf(0)} Z`;
+      krLayer = `<path d="${area}" fill="url(#fill)"/>`
+              + `<path d="${linePath}" fill="none" stroke="url(#stroke)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }
+    let lo=kr[0], hi=kr[0];
+    kr.forEach(p=>{ if(p.v<lo.v)lo=p; if(p.v>hi.v)hi=p; });
+    const labelXY=(p)=>Math.max(60,Math.min(VB_W-60,p.x));
+    // 토스처럼 '현재값이 그 극점 대비 몇 %인지'와 날짜를 함께 표기
+    const pcFrom=(p)=> p.v ? Math.round((last.v-p.v)/Math.abs(p.v)*1000)/10 : 0;
+    const hiPc=pcFrom(hi), loPc=pcFrom(lo);
+    extrema =
+      `<circle cx="${hi.x}" cy="${hi.y}" r="3" fill="${getCss('--extreme-greed')}"/>`
+      + `<text x="${labelXY(hi)}" y="${hi.y-9}" text-anchor="middle" fill="${getCss('--greed')}" font-size="10" font-family="IBM Plex Mono">최고 ${hi.v} (${hiPc>0?'+':''}${hiPc}%, ${fmtDateShort(hi.d)})</text>`
+      + `<circle cx="${lo.x}" cy="${lo.y}" r="3" fill="${getCss('--extreme-fear')}"/>`
+      + `<text x="${labelXY(lo)}" y="${lo.y+17}" text-anchor="middle" fill="${getCss('--extreme-fear')}" font-size="10" font-family="IBM Plex Mono">최저 ${lo.v} (${loPc>0?'+':''}${loPc}%, ${fmtDateShort(lo.d)})</text>`
+      + `<circle cx="${last.x}" cy="${last.y}" r="8" fill="${zone(last.v).c}" opacity="0.18"/>`
+      + `<circle cx="${last.x}" cy="${last.y}" r="4" fill="${zone(last.v).c}" stroke="${getCss('--bg')}" stroke-width="1.5"/>`;
+  }
+
+  // 측정선들: 추적 시리즈의 두 날짜를 잇는 현(chord) + 상승/하락 라벨.
+  // 날짜 앵커라 기간을 바꿔도 두 날짜가 화면에 있으면 그대로 살아난다.
+  const labelW = s => { let w=10; for(const ch of s) w += (ch.charCodeAt(0)<128 ? 5.6 : 9.4); return w; };
+  const trendSvg = trendlines.map(L=>{
+    const s = seriesInfo(L.key);
+    if(!s || !s.show || !s.pts.length) return '';
+    const i0r = s.pts.findIndex(p=>p.d===L.d0), i1r = s.pts.findIndex(p=>p.d===L.d1);
+    if(i0r < 0 || i1r < 0) return '';
+    const a = s.pts[Math.min(i0r,i1r)], b = s.pts[Math.max(i0r,i1r)];
+    if(a.y==null || b.y==null) return '';
+    const dP  = Math.round((b.v-a.v)*10)/10;
+    const pct = (a.v!==0) ? Math.round((b.v-a.v)/Math.abs(a.v)*1000)/10 : 0;
+    const col = s.dir ? dirColor(dP) : getCss(s.col);
+    const arrow = dP>0?'▲':dP<0?'▼':'–';
+    const lbl = `${arrow} ${s.fmt(Math.abs(dP))}${s.unit} (${pct>0?'+':''}${pct}%) · ${Math.abs(i1r-i0r)}일`;
+    const tw = labelW(lbl);
+    const lx = Math.max(PAD.l+2, Math.min(VB_W-tw-2, (a.x+b.x)/2 - tw/2));
+    const ly = Math.max(PAD.t+12, Math.min(PAD.t+plotH-6, (a.y+b.y)/2 - 11));
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${col}" stroke-width="1.8" stroke-linecap="round" opacity="0.95"/>`
+         + `<circle cx="${a.x}" cy="${a.y}" r="3" fill="${col}"/>`
+         + `<circle cx="${b.x}" cy="${b.y}" r="3" fill="${col}"/>`
+         + `<g><rect x="${lx}" y="${ly-9}" width="${tw}" height="14" rx="4" fill="${getCss('--tip-bg')}" stroke="${col}" stroke-width="0.8"/>`
+         + `<text x="${lx+tw/2}" y="${ly+1.5}" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="${col}">${lbl}</text></g>`;
+  }).join('');
+
+  // 이벤트 마커 (토글): 해당 날짜 위치에 보라 깃발 (휴장일이면 다음 거래일에 스냅)
+  let evSvg = '';
+  if(showEvents){
+    const inWin = [];
+    allEvents().forEach(ev=>{
+      if(ev.d < viewKR[0].d || ev.d > viewKR[n-1].d) return;   // 표시 구간 밖
+      let ix = -1;
+      for(let i=0;i<n;i++){ if(viewKR[i].d >= ev.d){ ix = i; break; } }
+      if(ix < 0) return;
+      (CUR.eventsAt[ix] = CUR.eventsAt[ix] || []).push(ev.t);
+      inWin.push({ ix, t: ev.t });
+    });
+    const showText = inWin.length <= 4;   // 깃발이 많으면 라벨은 호버로만
+    inWin.forEach(o=>{
+      const x = kr[o.ix].x;
+      evSvg += `<line x1="${x}" y1="${PAD.t}" x2="${x}" y2="${PAD.t+plotH}" stroke="${getCss('--buffett')}" stroke-width="1" stroke-dasharray="2 4" opacity="0.18"/>`
+             + `<line x1="${x}" y1="${PAD.t-8}" x2="${x}" y2="${PAD.t+2}" stroke="${getCss('--buffett')}" stroke-width="1.2" opacity="0.85"/>`
+             + `<path d="M ${x},${PAD.t-8} L ${x+8},${PAD.t-4.5} L ${x},${PAD.t-1} Z" fill="${getCss('--buffett')}" opacity="0.85"/>`;
+      if(showText) evSvg += `<text x="${Math.max(14,Math.min(VB_W-34,x+10))}" y="${PAD.t-1}" font-size="9" font-family="IBM Plex Mono" fill="${getCss('--buffett')}" opacity="0.9">${o.t}</text>`;
+    });
+  }
+
+  // 영역 채움 색: 탐욕이 켜져 있으면 현재 구간색, 아니면 중립
+  const fillC = showKR ? zone(last.v).c : getCss('--neutral');
+
+  /* ── 토스식 부가 요소들 ──────────────────────────────────── */
+  // (1) 구간 평균 점선 + 좌측 라벨 필 + 우측 값 배지 ("내 평균" 라인 대응)
+  let avgSvg = '';
+  const avg = Math.round(viewKR.reduce((s,o)=>s+o.v,0)/n*10)/10;
+  if(showKR){
+    const ay = yOf(avg);
+    avgSvg =
+      `<line x1="0" y1="${ay}" x2="${VB_W}" y2="${ay}" stroke="${getCss('--muted')}" stroke-width="1" stroke-dasharray="4 4" opacity="0.5"/>`
+      + `<g><rect x="16" y="${ay-7.5}" width="62" height="15" rx="4" fill="${getCss('--panel')}" stroke="${getCss('--faint')}"/>`
+      + `<text x="47" y="${ay+3.5}" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="${getCss('--muted')}">평균 ${avg}</text></g>`
+      + `<g><rect x="${VB_W-36}" y="${ay-7.5}" width="36" height="15" rx="4" fill="${getCss('--panel')}" stroke="${getCss('--faint')}"/>`
+      + `<text x="${VB_W-18}" y="${ay+3.5}" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="${getCss('--ink')}">${avg}</text></g>`;
+  }
+  // (2) 좌측 지수축 눈금 (0~100)
+  let axisL = '';
+  [0,25,50,75,100].forEach(v=>{
+    const y = Math.max(PAD.t+8, Math.min(PAD.t+plotH-1, yOf(v)+3));
+    axisL += `<text x="2" y="${y}" font-size="9" font-family="IBM Plex Mono" fill="${getCss('--muted')}" opacity="0.8">${v}</text>`;
+  });
+  // (3) 하단 날짜축 눈금 (기간에 따라 표기 단위 자동 변경)
+  let axisX = '';
+  {
+    const T = Math.min(5, n);
+    const used = new Set();
+    for(let j=0;j<T;j++){
+      const ix = Math.round(j*(n-1)/Math.max(1,T-1));
+      if(used.has(ix)) continue; used.add(ix);
+      const p = kr[ix]; const [Y,M] = p.d.split('-'); const D = p.d.split('-')[2];
+      const lbl = (windowDays && windowDays<=90) ? `${+M}.${+D}`
+                : (windowDays===365) ? `${+M}월`
+                : `${Y.slice(2)}.${+M}`;
+      const x = Math.max(16, Math.min(VB_W-16, p.x));
+      axisX += `<text x="${x}" y="${VB_H-6}" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="${getCss('--muted')}" opacity="0.8">${lbl}</text>`;
+    }
+  }
+  // (4) 우측 끝 현재값 배지 (등락색 모드면 당일 등락 방향색, 기본은 구간색)
+  let badge = '';
+  if(showKR){
+    const prevV = kr[n-2] ? kr[n-2].v : last.v;
+    const bc = (lineStyle==='updown') ? dirColor(last.v - prevV) : zone(last.v).c;
+    const by = Math.max(PAD.t+8, Math.min(PAD.t+plotH-8, last.y));
+    badge = `<g><rect x="${VB_W-38}" y="${by-8}" width="38" height="16" rx="4" fill="${bc}"/>`
+          + `<text x="${VB_W-19}" y="${by+3.5}" text-anchor="middle" font-size="10" font-weight="600" font-family="IBM Plex Mono" fill="#fff">${last.v}</text></g>`;
+  }
+  // (5) 상단 정보바: 추적 중인 시리즈의 시작/고점/저점/현재 (% = 구간 시작 대비)
+  buildInfobar();
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="stroke" gradientUnits="userSpaceOnUse" x1="0" y1="${yOf(100)}" x2="0" y2="${yOf(0)}">
+        <stop offset="0" stop-color="${getCss('--grad-top')}"/>
+        <stop offset="0.5" stop-color="#e9c46a"/>
+        <stop offset="1" stop-color="${getCss('--grad-bot')}"/>
+      </linearGradient>
+      <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${fillC}" stop-opacity="0.20"/>
+        <stop offset="1" stop-color="${fillC}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${bg}
+    ${avgSvg}
+    ${usLine}
+    ${fxLine}
+    ${kospiLine}
+    ${riskLine}
+    ${maLine}
+    ${krLayer}
+    ${extrema}
+    ${axisL}
+    ${axisX}
+    ${fxAxis}
+    ${kospiAxis}
+    ${badge}
+    ${evSvg}
+    ${trendSvg}
+
+    <!-- 상호작용 레이어 (항상 최상단, 투명) -->
+    <rect id="hit" x="0" y="0" width="${VB_W}" height="${VB_H}" fill="transparent"/>
+    <line id="guide" x1="0" y1="${PAD.t}" x2="0" y2="${PAD.t+plotH}" stroke="${getCss('--ink')}" stroke-width="1" opacity="0"/>
+    <line id="guideh" x1="0" y1="0" x2="${VB_W}" y2="0" stroke="${getCss('--ink')}" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>
+    <circle id="gdot" r="4" fill="${getCss('--ink')}" opacity="0"/>
+    <line id="draftline" x1="0" y1="0" x2="0" y2="0" stroke="${getCss('--buffett')}" stroke-width="1.8" stroke-dasharray="4 4" stroke-linecap="round" opacity="0"/>
+  `;
+  // 환율 카드의 '표시 구간 범위'는 창이 바뀔 때마다 여기서 갱신
+  const fxSub = document.getElementById('fxsub');
+  if(fxSub){
+    if(fxView.min != null){
+      // padV 여백을 되돌린 실제 데이터 범위에 가깝게 표시
+      const realVals = fxView.pts.filter(p=>p.v!=null).map(p=>p.v);
+      const rMin = Math.min(...realVals), rMax = Math.max(...realVals);
+      fxSub.textContent = `표시 구간 ${fmtKRW(Math.round(rMin))} ~ ${fmtKRW(Math.round(rMax))}원`;
+    } else if(!DATA.fx){
+      fxSub.textContent = '데이터 없음 · korea_fng.py 환율 export 패치 후 재실행 필요';
+    } else {
+      fxSub.textContent = '이 구간에는 환율 데이터가 없습니다';
+    }
+  }
+  updateHeader();
+  renderAnalytics();
+}
+
+function updateHeader(){
+  const last = DATA.kr[DATA.kr.length-1];
+  const prev = DATA.kr[DATA.kr.length-2] || last;
+  const z = zone(last.v);
+  document.getElementById('bigval').textContent = last.v;
+  const st = document.getElementById('state'); st.textContent = z.name; st.style.color = z.c;
+  document.getElementById('dot').style.background = z.c;
+  const diff = Math.round((last.v - prev.v)*10)/10;
+  const arrow = diff>0?'▲':diff<0?'▼':'–';
+  const col = dirColor(diff);
+  document.getElementById('change').innerHTML =
+    `직전 대비 <b style="color:${col}">${arrow} ${Math.abs(diff)}</b> · ${last.d} 기준`;
+  document.getElementById('mk').style.left = `calc(${last.v}% - 1.5px)`;
+
+  // 위험지수
+  const riskEl = document.getElementById('riskval');
+  const riskSub = document.getElementById('risksub');
+  if(DATA.risk && DATA.risk.length){
+    const r = DATA.risk[DATA.risk.length-1].v;
+    riskEl.textContent = r;
+    riskSub.textContent = riskLabel(r);
+  } else {
+    riskEl.textContent = '–'; riskSub.textContent = '데이터 없음';
+  }
+
+  // 버핏지수
+  const bufEl = document.getElementById('bufval');
+  const bufSub = document.getElementById('bufsub');
+  if(DATA.buffett && DATA.buffett.ratio != null){
+    bufEl.textContent = Math.round(DATA.buffett.ratio) + '%';
+    bufSub.textContent = buffettLabel(DATA.buffett.ratio) + ` · 점수 ${Math.round(DATA.buffett.score)}`;
+  } else {
+    bufEl.textContent = '–'; bufSub.textContent = '데이터 없음';
+  }
+
+  // 환율: 마지막 유효값 + 직전 유효값 대비 변화
+  const fxVal = document.getElementById('fxval');
+  const fxChg = document.getElementById('fxchg');
+  const fxArr = (DATA.fx || []).filter(p => p.v != null && !isNaN(p.v));
+  if(fxArr.length){
+    const a = fxArr[fxArr.length-1];
+    const b = fxArr[fxArr.length-2] || a;
+    fxVal.textContent = fmtKRW(a.v) + '원';
+    const d = Math.round((a.v - b.v)*10)/10;
+    const ar = d>0?'▲':d<0?'▼':'–';
+    // 환율 상승 = 원화 약세 = 공포 방향 → 빨강 / 하락 → 초록
+    const c = d>0?getCss('--extreme-fear'):d<0?getCss('--greed'):getCss('--muted');
+    fxChg.innerHTML = `<span style="color:${c}">${ar} ${fmtKRW(Math.abs(d))}원</span>`;
+  } else {
+    fxVal.textContent = '–'; fxChg.textContent = '';
+  }
+}
+
+/* ── 분석 섹션: 분포/지속일 · 30일 통계 경로 · 기여도 · 구간별 수익률 ──
+   전부 '전체 이력' 기준이라 기간 탭과 무관. 테마 전환 시 색을 다시 읽도록
+   render() 끝에서 매번 호출한다(전체 계산 ~6만 회 연산, 체감 비용 없음). */
+function renderAnalytics(){
+  if(!DATA || !DATA.kr || !DATA.kr.length) return;
+  const krAll = DATA.kr, N = krAll.length;
+  const cur = krAll[N-1].v, z = zone(cur), zn = zoneName(cur);
+
+  /* (1) 히스토그램 + 역사적 백분위 + 현재 구간 지속일 */
+  const HB = 20, counts = new Array(HB).fill(0);
+  let below = 0;
+  for(let i=0;i<N;i++){
+    const v = krAll[i].v;
+    counts[Math.min(HB-1, Math.floor(v/5))]++;
+    if(v <= cur) below++;
+  }
+  const pctile = Math.round(below/N*1000)/10;
+  let dur = 0;
+  for(let i=N-1; i>=0 && zoneName(krAll[i].v)===zn; i--) dur++;
+  const ds = document.getElementById('distStat');
+  if(ds) ds.innerHTML =
+    `현재 <b style="color:${z.c}">${cur} · ${zn}</b> <span class="amut">${dur}거래일째</span>`
+    + ` — 전체 ${N.toLocaleString()}일 중 오늘보다 낮았던 날 <b>${pctile}%</b>`;
+  const hsvg = document.getElementById('histChart');
+  if(hsvg){
+    const W=436, H=120, pl=6, pb=16, pt2=6, bw=(W-pl*2)/HB;
+    const mx = Math.max(...counts);
+    const curBin = Math.min(HB-1, Math.floor(cur/5));
+    let bars='';
+    for(let b=0;b<HB;b++){
+      const h = mx ? (counts[b]/mx)*(H-pt2-pb) : 0;
+      bars += `<rect x="${pl+b*bw+1}" y="${H-pb-h}" width="${bw-2}" height="${Math.max(0.5,h)}" rx="2"`
+            + ` fill="${b===curBin ? z.c : getCss('--faint')}"/>`;
+    }
+    let xl='';
+    [0,25,50,75,100].forEach(v=>{
+      xl += `<text x="${pl+v/100*(W-pl*2)}" y="${H-4}" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="${getCss('--muted')}">${v}</text>`;
+    });
+    hsvg.innerHTML = bars + xl;
+  }
+
+  /* (2) 향후 30일 통계 경로: 과거 같은 구간이던 날들의 t일 후 변화량 평균/사분위 */
+  const HOR = 30;
+  const samples = [];
+  for(let i=0;i<N-HOR;i++) if(zoneName(krAll[i].v)===zn) samples.push(i);
+  const psvg = document.getElementById('bandChart'), psub = document.getElementById('pathSub');
+  if(psvg && psub){
+    if(samples.length < 5){
+      psvg.style.display='none'; psvg.innerHTML='';
+      psub.textContent = `과거 '${zn}' 표본이 ${samples.length}건뿐이라 통계 경로를 그릴 수 없습니다.`;
+    } else {
+      psvg.style.display='';
+      const mean=[], q25=[], q75=[];
+      for(let t=0;t<=HOR;t++){
+        const ds_ = samples.map(i=>krAll[i+t].v - krAll[i].v).sort((a,b)=>a-b);
+        const q = p => ds_[Math.min(ds_.length-1, Math.floor(p*(ds_.length-1)))];
+        mean.push(ds_.reduce((s2,v)=>s2+v,0)/ds_.length);
+        q25.push(q(0.25)); q75.push(q(0.75));
+      }
+      const W=436, H=140, pl=26, pr=36, pt2=8, pb2=18;
+      const xs = t => pl + t/HOR*(W-pl-pr);
+      const ys = v => pt2 + (1 - Math.max(0,Math.min(100,v))/100)*(H-pt2-pb2);
+      const mPts = mean.map((m,t)=>({x:xs(t), y:ys(cur+m)}));
+      const band = 'M ' + q75.map((v,t)=>`${xs(t)},${ys(cur+v)}`).join(' L ')
+                 + ' L ' + q25.slice().reverse().map((v,t)=>`${xs(HOR-t)},${ys(cur+v)}`).join(' L ') + ' Z';
+      let grid='';
+      [25,50,75].forEach(g=>{
+        grid += `<line x1="${pl}" y1="${ys(g)}" x2="${W-pr}" y2="${ys(g)}" stroke="${getCss('--faint')}" stroke-width="1" stroke-dasharray="2 4"/>`
+              + `<text x="2" y="${ys(g)+3}" font-size="8.5" font-family="IBM Plex Mono" fill="${getCss('--muted')}">${g}</text>`;
+      });
+      let xl2='';
+      [0,10,20,30].forEach(t=>{
+        xl2 += `<text x="${xs(t)}" y="${H-4}" text-anchor="middle" font-size="8.5" font-family="IBM Plex Mono" fill="${getCss('--muted')}">${t?'+'+t+'일':'오늘'}</text>`;
+      });
+      const m30=Math.round(mean[HOR]*10)/10, lo30=Math.round(q25[HOR]*10)/10, hi30=Math.round(q75[HOR]*10)/10;
+      psvg.innerHTML = grid
+        + `<path d="${band}" fill="${z.c}" opacity="0.12"/>`
+        + `<path d="${smoothPath(mPts)}" fill="none" stroke="${z.c}" stroke-width="2"/>`
+        + `<circle cx="${xs(0)}" cy="${ys(cur)}" r="3.5" fill="${z.c}"/>`
+        + `<text x="${W-pr+3}" y="${ys(cur+mean[HOR])+3}" font-size="9" font-family="IBM Plex Mono" fill="${z.c}">${Math.round((cur+m30)*10)/10}</text>`
+        + xl2;
+      psub.innerHTML = `과거 '<b>${zn}</b>' <b>${samples.length.toLocaleString()}건</b> 기준 30일 후 평균 `
+        + `<b style="color:${dirColor(m30)}">${m30>0?'+':''}${m30}p</b>`
+        + ` · 25~75분위 ${lo30>0?'+':''}${lo30} ~ ${hi30>0?'+':''}${hi30}p`
+        + ` <span class="amut">— 연속일 중복 표본 포함</span>`;
+    }
+  }
+
+  /* (3) 오늘 지표별 기여도: 그날 유효 지표만 재정규화(wr = w/Σw), 기여 = wr×점수 */
+  const cb = document.getElementById('compBars');
+  if(cb){
+    if(!(DATA.components && (DATA.components.greed || DATA.components.risk))){
+      cb.innerHTML = `<div class="asub">korea_fng.py 새 버전을 실행해 history.json에 <b>components</b> 키가 생기면 표시됩니다.</div>`;
+    } else {
+      const axisHtml = (label, obj, fixedColor) => {
+        if(!obj || !obj.items || !obj.items.length) return '';
+        const wsum = obj.items.reduce((s2,o)=>s2+o.w, 0);
+        let tot = 0;
+        const rows = obj.items.map(o=>{
+          const wr = o.w/wsum, c = wr*o.v; tot += c;
+          const col = fixedColor || zone(o.v).c;
+          return `<div class="crow"><span class="cn">${o.n}</span>`
+            + `<span class="cbar"><i style="width:${Math.max(0,Math.min(100,o.v))}%;background:${col}"></i></span>`
+            + `<span class="cv">${o.v} <em>· ${Math.round(wr*100)}% → ${Math.round(c*10)/10}p</em></span></div>`;
+        }).join('');
+        return `<div class="cgrp"><div class="cghead">${label} <b>${Math.round(tot*10)/10}</b> <span class="amut">(${obj.d} · 점수 × 재정규화 가중치의 합)</span></div>${rows}</div>`;
+      };
+      cb.innerHTML = axisHtml('탐욕지수', DATA.components.greed, null)
+                   + axisHtml('위험지수', DATA.components.risk, getCss('--risk'));
+    }
+  }
+
+  /* (4) 구간별 KOSPI 평균 수익률: 그 구간이던 날 매수 → +5/+20/+60 거래일 보유 */
+  const zt = document.getElementById('zoneTable');
+  if(zt){
+    if(!(DATA.kospi && DATA.kospi.length === N)){
+      zt.innerHTML = `<div class="asub">korea_fng.py 새 버전 실행 후 history.json에 <b>kospi</b> 키가 생기면 표시됩니다.</div>`;
+    } else {
+      const ks = DATA.kospi, HORS = [5,20,60];
+      const zonesList = ['극단적 공포','공포','중립','탐욕','극단적 탐욕'];
+      const zcol = {'극단적 공포':'--extreme-fear','공포':'--fear','중립':'--neutral','탐욕':'--greed','극단적 탐욕':'--extreme-greed'};
+      const acc = {};
+      zonesList.forEach(k=>acc[k]={n:0, sum:{5:0,20:0,60:0}, cnt:{5:0,20:0,60:0}});
+      for(let i=0;i<N;i++){
+        const k = zoneName(krAll[i].v); acc[k].n++;
+        const base = ks[i] ? ks[i].v : null;
+        if(base == null) continue;
+        for(const h of HORS){
+          const f = ks[i+h];
+          if(f && f.v != null){ acc[k].sum[h] += (f.v/base - 1)*100; acc[k].cnt[h]++; }
+        }
+      }
+      const cell = (k,h) => {
+        const a = acc[k]; if(!a.cnt[h]) return '<td>–</td>';
+        const m = Math.round(a.sum[h]/a.cnt[h]*100)/100;
+        return `<td style="color:${dirColor(m)}">${m>0?'+':''}${m}%</td>`;
+      };
+      zt.innerHTML =
+        `<table class="ztab"><thead><tr><th>구간</th><th>일수</th><th>+5일</th><th>+20일</th><th>+60일</th></tr></thead><tbody>`
+        + zonesList.map(k=>
+            `<tr class="${k===zn?'me':''}"><td><i class="zsw" style="background:${getCss(zcol[k])}"></i>${k}</td>`
+            + `<td>${acc[k].n.toLocaleString()}</td>${cell(k,5)}${cell(k,20)}${cell(k,60)}</tr>`).join('')
+        + `</tbody></table>`
+        + `<div class="asub" style="margin-top:6px">연속일 중복 표본 포함 · 수수료/배당 미반영 — 통계적 참고용</div>`;
+    }
+  }
+}
+
+/* ── 좌표/시리즈 헬퍼 ───────────────────────────────────────── */
+function idxAt(clientX, series){
+  const r=document.getElementById('chart').getBoundingClientRect();
+  const xv=(clientX-r.left)/r.width*VB_W;
+  const m=(series && series.length) ? series.length : 1;
+  if(m<=1) return 0;
+  return Math.max(0, Math.min(m-1, Math.round((xv-PAD.l)/plotW*(m-1))));
+}
+/* ── 시리즈 메타: 추적/측정에 필요한 모든 정보를 한 곳에서 ──────
+   dir=true  : 0~100 지수라 변화 방향색(dirColor)을 쓰는 시리즈
+   dir=false : 환율·KOSPI처럼 상승=긍정이 아니므로 자기 색으로 중립 표시 */
+function seriesInfo(key){
+  switch(key){
+    case 'kr':    return { key, pts:CUR.kr,    show:showKR,    label:'탐욕',  unit:'p',  col:null,      dir:true,  fmt:v=>v };
+    case 'risk':  return { key, pts:CUR.risk,  show:showRisk,  label:'위험',  unit:'p',  col:'--risk',  dir:true,  fmt:v=>v };
+    case 'fx':    return { key, pts:CUR.fx,    show:showFX,    label:'환율',  unit:'원', col:'--fx',    dir:false, fmt:fmtKRW };
+    case 'kospi': return { key, pts:CUR.kospi, show:showKospi, label:'KOSPI', unit:'pt', col:'--kospi', dir:false, fmt:fmtKRW };
+    case 'us':    return { key, pts:CUR.us,    show:showUS,    label:'미국',  unit:'p',  col:'--us',    dir:true,  fmt:v=>v };
+    case 'ma':    return { key, pts:CUR.ma,    show:showMA,    label:'MA20',  unit:'p',  col:'--muted', dir:true,  fmt:v=>v };
+  }
+  return null;
+}
+const TRACK_ORDER = ['kr','risk','fx','kospi','us','ma'];
+/* 추적 중인 시리즈. 꺼졌으면 보이는 첫 시리즈로 자동 강등(점이 허공에 뜨는 것 방지) */
+function trackedInfo(){
+  const t = seriesInfo(tracked);
+  if(t && t.show && t.pts.length) return t;
+  for(const k of TRACK_ORDER){
+    const s = seriesInfo(k);
+    if(s.show && s.pts.length) return s;
+  }
+  return seriesInfo('kr');
+}
+/* 시리즈 색: 탐욕은 그 지점의 구간색, 나머지는 자기 고정색 */
+function seriesColorAt(info, p){
+  return (info.key==='kr' && p && p.v!=null) ? zone(p.v).c : getCss(info.col || '--ink');
+}
+/* 클릭 지점에서 가장 가까운(세로거리) 켜진 시리즈 고르기. 28px 안에 없으면 null */
+function pickSeriesAt(clientX, clientY){
+  const v = clientToVB(clientX, clientY);
+  let best = null, bestDist = 28;
+  for(const k of TRACK_ORDER){
+    const s = seriesInfo(k);
+    if(!s.show || !s.pts.length) continue;
+    const i = idxAt(clientX, s.pts);
+    const p = s.pts[i];
+    if(!p || p.y == null) continue;
+    const d = Math.abs(p.y - v.vy);
+    if(d < bestDist){ bestDist = d; best = k; }
+  }
+  return best;
+}
+function clientToVB(clientX, clientY){   // 화면 픽셀 → SVG viewBox 좌표
+  const r=document.getElementById('chart').getBoundingClientRect();
+  return { vx:(clientX-r.left)/r.width*VB_W, vy:(clientY-r.top)/r.height*VB_H, r };
+}
+function placeTip(tip, p, r){            // 툴팁을 점을 피해 모서리에 배치
+  const px=p.x/VB_W*r.width, py=(p.y==null?VB_H/2:p.y)/VB_H*r.height;
+  const tw=tip.offsetWidth, th=tip.offsetHeight, gap=14, m=4, W=r.width, H=r.height;
+  let left=(px<W/2)?px+gap:px-gap-tw; left=Math.max(m,Math.min(W-tw-m,left));
+  let top =(py<H/2)?py+gap:py-gap-th; top =Math.max(m,Math.min(H-th-m,top));
+  tip.style.left=left+'px'; tip.style.top=top+'px';
+}
+function hideHover(){
+  const g=document.getElementById('guide'),d=document.getElementById('gdot'),t=document.getElementById('tip');
+  const gh=document.getElementById('guideh');
+  if(g)g.setAttribute('opacity','0'); if(d)d.setAttribute('opacity','0'); if(t)t.style.opacity='0';
+  if(gh)gh.setAttribute('opacity','0');
+  const ib=document.getElementById('infobar');
+  if(ib && INFOBAR_DEFAULT) ib.innerHTML = INFOBAR_DEFAULT;
+}
+
+/* ── 상단 정보바: 추적 중인 시리즈의 구간 요약 ───────────────── */
+function buildInfobar(){
+  const T = trackedInfo();
+  const ib = document.getElementById('infobar');
+  const pts = (T && T.pts) ? T.pts.filter(p=>p.v!=null) : [];
+  if(!pts.length){ INFOBAR_DEFAULT=''; if(ib) ib.innerHTML=''; return; }
+  let hiO=pts[0], loO=pts[0];
+  pts.forEach(o=>{ if(o.v>hiO.v)hiO=o; if(o.v<loO.v)loO=o; });
+  const v0 = pts[0].v, lastP = pts[pts.length-1];
+  const F = T.fmt;
+  const pc = v => {
+    const p = Math.round((v-v0)/Math.abs(v0)*1000)/10;
+    const c = T.dir ? dirColor(v-v0) : getCss(T.col);
+    return `<span style="color:${c}">(${p>0?'+':''}${p}%)</span>`;
+  };
+  INFOBAR_DEFAULT =
+    `<span style="color:${seriesColorAt(T,lastP)};font-weight:600">◉ ${T.label}</span>`
+    + `<span>시작 <b>${F(v0)}</b></span>`
+    + `<span>고점 <b>${F(hiO.v)}</b> ${pc(hiO.v)}</span>`
+    + `<span>저점 <b>${F(loO.v)}</b> ${pc(loO.v)}</span>`
+    + `<span>현재 <b>${F(lastP.v)}</b> ${pc(lastP.v)}</span>`;
+  if(ib) ib.innerHTML = INFOBAR_DEFAULT;
+}
+
+/* ── 호버: 점은 추적 시리즈를 따라가고, 툴팁엔 켜진 지표 전부 ── */
+function showHover(clientX){
+  const kr=CUR.kr; if(!kr.length) return;
+  const i=idxAt(clientX, kr);
+  const tip=document.getElementById('tip');
+  const guide=document.getElementById('guide'), gdot=document.getElementById('gdot');
+  const T=trackedInfo();
+  const p=(T && T.pts[i]) ? T.pts[i] : kr[i];     // 추적 시리즈의 그 날짜 점
+  const r=document.getElementById('chart').getBoundingClientRect();
+  guide.setAttribute('x1',p.x); guide.setAttribute('x2',p.x); guide.setAttribute('opacity','0.28');
+  const guideh=document.getElementById('guideh');
+  if(T && T.show && p.y != null){
+    gdot.setAttribute('cx',p.x); gdot.setAttribute('cy',p.y); gdot.setAttribute('opacity','1');
+    gdot.setAttribute('fill', seriesColorAt(T,p));
+    if(guideh){ guideh.setAttribute('y1',p.y); guideh.setAttribute('y2',p.y); guideh.setAttribute('opacity','0.22'); }
+  } else {
+    gdot.setAttribute('opacity','0');
+    if(guideh) guideh.setAttribute('opacity','0');
+  }
+  // 정보바를 그 날짜의 추적 시리즈 값(전일 대비 포함)으로 전환, 벗어나면 복원
+  if(T && p && p.v!=null){
+    const pp = T.pts[i-1], pv = (pp && pp.v!=null) ? pp.v : p.v;
+    const dd = Math.round((p.v - pv)*10)/10;
+    const dc = T.dir ? dirColor(dd) : getCss(T.col);
+    const ib = document.getElementById('infobar');
+    if(ib) ib.innerHTML =
+      `<span style="color:${seriesColorAt(T,p)};font-weight:600">◉ ${T.label}</span>`
+      + `<span>${p.d}</span><span><b>${T.fmt(p.v)}</b> `
+      + `<span style="color:${dc}">(전일 ${dd>0?'▲':dd<0?'▼':'–'} ${T.fmt(Math.abs(dd))})</span></span>`;
+  }
+
+  const mark = k => (k===T.key ? '◉ ' : '');
+  const kv=(showKR && kr[i])?kr[i].v:null;
+  const rv=(showRisk && CUR.risk[i])?CUR.risk[i].v:null;
+  const uv=(showUS && CUR.us[i] && CUR.us[i].v!=null)?CUR.us[i].v:null;
+  const fv=(showFX && CUR.fx[i] && CUR.fx[i].v!=null)?CUR.fx[i].v:null;
+  const kpv=(showKospi && CUR.kospi[i] && CUR.kospi[i].v!=null)?CUR.kospi[i].v:null;
+  const mv=(showMA && CUR.ma[i] && CUR.ma[i].v!=null)?CUR.ma[i].v:null;
+  const date=(kr[i]||{}).d||'';
+  let rows='';
+  if(kv!=null){ const z=zone(kv); rows+=`<div class="row"><span class="k">${mark('kr')}탐욕</span><span class="v" style="color:${z.c}">${kv}<span class="zn">${z.name}</span></span></div>`; }
+  if(mv!=null){ rows+=`<div class="row"><span class="k">${mark('ma')}MA20</span><span class="v" style="color:${getCss('--muted')}">${mv}</span></div>`; }
+  if(rv!=null){ rows+=`<div class="row"><span class="k">${mark('risk')}위험</span><span class="v" style="color:${getCss('--risk')}">${rv}<span class="zn">${riskLabel(rv)}</span></span></div>`; }
+  if(fv!=null){ rows+=`<div class="row"><span class="k">${mark('fx')}환율</span><span class="v" style="color:${getCss('--fx')}">${fmtKRW(fv)}<span class="zn">원</span></span></div>`; }
+  if(kpv!=null){ rows+=`<div class="row"><span class="k">${mark('kospi')}KOSPI</span><span class="v" style="color:${getCss('--kospi')}">${fmtKRW(kpv)}</span></div>`; }
+  if(uv!=null){ rows+=`<div class="row"><span class="k">${mark('us')}미국</span><span class="v" style="color:${getCss('--us')}">${uv}</span></div>`; }
+  if(CUR.eventsAt && CUR.eventsAt[i] && CUR.eventsAt[i].length){
+    rows+=`<div class="row"><span class="k">이벤트</span><span class="v" style="color:${getCss('--buffett')}">${CUR.eventsAt[i].join(', ')}</span></div>`;
+  }
+  if(!rows) rows=`<div class="row"><span class="k">표시할 지표 없음</span></div>`;
+  tip.innerHTML=`<div class="td">${date}</div>`+rows;
+  tip.style.opacity='1';
+  placeTip(tip, p, r);
+}
+
+/* ── 드래그 중 라이브 측정: 추적 시리즈의 두 시점을 잇는 점선 + 변화량 ── */
+function showDragMeasure(clientX, startI){
+  const T=trackedInfo(); const pts=T.pts; if(!pts.length) return;
+  const ci=idxAt(clientX, pts);
+  const a=pts[startI], b=pts[ci];
+  const dl=document.getElementById('draftline');
+  const tip=document.getElementById('tip');
+  if(!a||!b||a.v==null||b.v==null||a.y==null||b.y==null){
+    if(dl) dl.setAttribute('opacity','0');
+    return;
+  }
+  const dP=Math.round((b.v-a.v)*10)/10;
+  const pct=(a.v!==0)?Math.round((b.v-a.v)/Math.abs(a.v)*1000)/10:0;
+  const col = T.dir ? dirColor(dP) : getCss(T.col);
+  dl.setAttribute('x1',a.x); dl.setAttribute('y1',a.y);
+  dl.setAttribute('x2',b.x); dl.setAttribute('y2',b.y);
+  dl.setAttribute('stroke',col); dl.setAttribute('opacity','1');
+  const guide=document.getElementById('guide'), gdot=document.getElementById('gdot');
+  guide.setAttribute('x1',b.x); guide.setAttribute('x2',b.x); guide.setAttribute('opacity','0.28');
+  const gh=document.getElementById('guideh'); if(gh) gh.setAttribute('opacity','0');
+  gdot.setAttribute('cx',b.x); gdot.setAttribute('cy',b.y);
+  gdot.setAttribute('opacity','1'); gdot.setAttribute('fill',col);
+  const arrow=dP>0?'▲':dP<0?'▼':'–';
+  const r=document.getElementById('chart').getBoundingClientRect();
+  tip.innerHTML=
+    `<div class="td">◉ ${T.label} · ${a.d} → ${b.d}</div>`
+    + `<div class="row"><span class="k">변화</span><span class="v" style="color:${col}">${arrow} ${T.fmt(Math.abs(dP))}${T.unit}</span></div>`
+    + `<div class="row"><span class="k">변화율</span><span class="v" style="color:${col}">${pct>0?'+':''}${pct}%</span></div>`
+    + `<div class="row"><span class="k">구간</span><span class="v">${Math.abs(ci-startI)} 거래일</span></div>`;
+  tip.style.opacity='1';
+  placeTip(tip, b, r);
+}
+
+/* ── 통합 포인터 핸들러 ─────────────────────────────────────────
+   · 클릭(탭)  : 가장 가까운 선을 '추적 시리즈'로 선택 → 점·정보바가 그 선을 따라감
+   · 드래그    : 추적 시리즈 위 두 시점을 잇는 측정선을 그림(상승/하락 라벨 영구 표시) */
+function setupInteractions(){
+  const svg=document.getElementById('chart');
+  svg.style.touchAction='none';   // 드래그 중 페이지 스크롤 방지(터치)
+  let dragging=false, moved=false, startI=0;
+
+  svg.addEventListener('pointerdown', e=>{
+    if(e.button!==0) return;       // 좌클릭/터치만
+    dragging=true; moved=false;
+    try{ svg.setPointerCapture(e.pointerId); }catch(_){}
+    startI=idxAt(e.clientX, trackedInfo().pts);
+  });
+  svg.addEventListener('pointermove', e=>{
+    if(dragging){
+      moved=true;
+      showDragMeasure(e.clientX, startI);
+    }else{
+      showHover(e.clientX);        // 드래그가 아니면 항상 호버 표시
+    }
+  });
+  function endDrag(e){
+    if(!dragging) return;
+    dragging=false;
+    const dl=document.getElementById('draftline');
+    if(dl) dl.setAttribute('opacity','0');
+    const T=trackedInfo();
+    if(moved){
+      // 드래그 종료 → 두 시점이 유효하면 측정선으로 고정
+      const ci=idxAt(e.clientX, T.pts);
+      const a=T.pts[startI], b=T.pts[ci];
+      if(a && b && ci!==startI && a.v!=null && b.v!=null && a.y!=null && b.y!=null){
+        trendlines.push({ key:T.key, d0:a.d, d1:b.d });
+        render();
+      }
+    }else{
+      // 단순 클릭(탭) → 가까운 선이 있으면 추적 시리즈 변경
+      const k=pickSeriesAt(e.clientX, e.clientY);
+      if(k && k!==tracked){ tracked=k; buildInfobar(); }
+      showHover(e.clientX);
+    }
+  }
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', ()=>{ dragging=false; const dl=document.getElementById('draftline'); if(dl) dl.setAttribute('opacity','0'); });
+  svg.addEventListener('pointerleave', ()=>{ if(!dragging) hideHover(); });
+}
+
+/* ── 컨트롤 핸들러 ──────────────────────────────────────────── */
+document.getElementById('tabs').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  [...document.querySelectorAll('#tabs button')].forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  windowDays = +b.dataset.d;
+  render();   // 측정선은 날짜 앵커라 화면 안에 두 날짜가 있으면 자동으로 살아남
+});
+document.getElementById('legend').addEventListener('click', e=>{
+  const b=e.target.closest('.chip'); if(!b) return;
+  const s=b.dataset.s;
+  if(s==='kr') showKR=!showKR;
+  else if(s==='risk') showRisk=!showRisk;
+  else if(s==='us') showUS=!showUS;
+  else if(s==='fx') showFX=!showFX;
+  else if(s==='kospi') showKospi=!showKospi;
+  else if(s==='ev') showEvents=!showEvents;
+  else if(s==='ma') showMA=!showMA;
+  b.classList.toggle('on');
+  render();
+});
+document.getElementById('tools').addEventListener('click', e=>{
+  const b=e.target.closest('.tbtn'); if(!b) return;
+  if(b.id==='clearTrend'){ trendlines=[]; render(); return; }
+  if(b.id==='styleToggle'){
+    lineStyle = (lineStyle==='zone') ? 'updown' : 'zone';
+    b.classList.toggle('on', lineStyle==='updown');
+    try{ localStorage.setItem('fng-linestyle', lineStyle); }catch(_){}
+    render(); return;
+  }
+});
+setupInteractions();
+
+/* ── 테마 토글: 저장 실패해도(임베드 등) 동작 자체는 유지 ─────── */
+let theme = 'light';
+function applyTheme(t){
+  theme = t;
+  document.documentElement.dataset.theme = t;
+  const btn = document.getElementById('themeBtn');
+  if(btn) btn.textContent = (t==='dark') ? '☀ 라이트' : '☾ 다크';
+  if(DATA) render();   // SVG 색은 렌더 시점에 CSS 변수에서 읽으므로 다시 그림
+}
+try{ theme = localStorage.getItem('fng-theme') || 'light'; }catch(_){}
+applyTheme(theme);
+try{
+  if(localStorage.getItem('fng-linestyle') === 'updown'){
+    lineStyle = 'updown';
+    const sb = document.getElementById('styleToggle');
+    if(sb) sb.classList.add('on');
+  }
+}catch(_){}
+document.getElementById('themeBtn').addEventListener('click', ()=>{
+  const next = (theme==='dark') ? 'light' : 'dark';
+  try{ localStorage.setItem('fng-theme', next); }catch(_){}
+  applyTheme(next);
+});
+
+/* ── fx/kospi 데이터 유무에 따라 칩 활성/비활성 ────────────────── */
+function syncSeriesAvailability(){
+  [['fx','환율'], ['kospi','KOSPI']].forEach(([key,label])=>{
+    const chip = document.querySelector(`.chip[data-s="${key}"]`);
+    const has = !!(DATA && DATA[key] && DATA[key].some(p => p.v != null));
+    if(!has){
+      if(key==='fx') showFX = false; else showKospi = false;
+      if(chip){ chip.classList.remove('on'); chip.classList.add('disabled');
+                chip.title = `history.json에 ${label}(${key}) 데이터가 없습니다`; }
+    } else if(chip){
+      chip.classList.remove('disabled'); chip.title = '';
+    }
+  });
+}
+
+/* ── 구간 이탈 알림 ────────────────────────────────────────────
+   정적 호스팅(GitHub Pages)이라 서버 푸시는 불가 → '페이지를 열 때' 마지막
+   이틀 사이 25/75 경계 돌파를 검사하는 방식. 같은 날짜로는 한 번만 알린다.
+   iOS 사파리는 홈화면 추가(PWA)가 아니면 Notification 미지원 → 화면 배너로 대체. */
+let notifyOn = false;
+try{ notifyOn = localStorage.getItem('fng-notify') === '1'; }catch(_){}
+function boundaryCross(prevV, curV){
+  for(const b of [25, 75]){
+    if(prevV <  b && curV >= b) return { b, dir:'up' };
+    if(prevV >= b && curV <  b) return { b, dir:'down' };
+  }
+  return null;
+}
+function checkAlert(){
+  const a = DATA && DATA.kr;
+  const strip = document.getElementById('alertStrip');
+  if(!a || a.length < 2){ if(strip) strip.classList.remove('show'); return; }
+  const prevV = a[a.length-2].v, curV = a[a.length-1].v, d = a[a.length-1].d;
+  const x = boundaryCross(prevV, curV);
+  if(!x){ if(strip) strip.classList.remove('show'); return; }
+  const msg = `${d} 기준 탐욕지수가 ${x.b}를 ${x.dir==='up'?'상향':'하향'} 돌파 (${prevV} → ${curV}, ${zoneName(curV)} 진입)`;
+  if(strip){
+    strip.style.borderLeftColor = zone(curV).c;
+    strip.textContent = '⚑ ' + msg;
+    strip.classList.add('show');
+  }
+  let lastSent = null;
+  try{ lastSent = localStorage.getItem('fng-notified'); }catch(_){}
+  if(notifyOn && lastSent !== d
+     && typeof Notification !== 'undefined' && Notification.permission === 'granted'){
+    try{
+      new Notification('한국형 공포·탐욕지수', { body: msg });
+      try{ localStorage.setItem('fng-notified', d); }catch(_){}
+    }catch(err){ console.error('[fng] 알림 표시 실패:', err); }
+  }
+}
+function syncNotifBtn(){
+  const b = document.getElementById('notifBtn');
+  if(!b) return;
+  if(typeof Notification === 'undefined'){
+    b.textContent = '알림 미지원'; b.disabled = true; b.style.opacity = .5;
+    b.title = '이 브라우저는 웹 알림을 지원하지 않습니다 (iOS는 홈화면 추가 시 지원)';
+    return;
+  }
+  b.textContent = (notifyOn && Notification.permission==='granted') ? '알림 켜짐' : '알림';
+}
+document.getElementById('notifBtn').addEventListener('click', ()=>{
+  if(typeof Notification === 'undefined') return;
+  if(notifyOn && Notification.permission === 'granted'){
+    notifyOn = false;
+    try{ localStorage.setItem('fng-notify','0'); }catch(_){}
+    syncNotifBtn(); return;
+  }
+  Notification.requestPermission().then(p=>{
+    notifyOn = (p === 'granted');
+    try{ localStorage.setItem('fng-notify', notifyOn?'1':'0'); }catch(_){}
+    if(!notifyOn) console.error('[fng] 알림 권한이 허용되지 않았습니다:', p);
+    syncNotifBtn(); checkAlert();
+  });
+});
+syncNotifBtn();
+
+function boot(data){ DATA=data; syncSeriesAvailability(); render(); checkAlert(); }
+function markReal(){
+  const n=document.getElementById('note');
+  if(!n) return;
+  let html =
+    '<span class="badge live">실제 데이터</span>'
+    + 'history.json 을 불러왔습니다. korea_fng.py 를 다시 실행하면 이 차트도 갱신됩니다.'
+    + '<div class="row" style="margin-top:10px"><b>탐욕지수</b>: 가격이 얼마나 달리는지 (0~100, 높을수록 과열)</div>'
+    + '<div class="row"><b>위험지수</b>: 시장이 얼마나 흔들리는지 (0~100, 높을수록 위험)</div>'
+    + '<div class="row"><b>버핏지수</b>: 코스피+코스닥 시가총액을 한국 GDP로 나눈 비율 (%). 100%면 시장 = 1년 경제 규모.</div>'
+    + '<div class="row"><b>환율</b>: 원/달러 실제값(원). 오를수록 원화 약세 = 공포 방향. 우측 청록 축.</div>'
+    + '<div class="row"><b>KOSPI</b>: 코스피 종가 오버레이(우측 앰버 축). 지수와의 선행·후행 비교용.</div>'
+    + '<div class="row"><b>이벤트</b>: 보라 깃발. 파일 상단 EVENTS 배열 또는 events.json으로 관리.</div>';
+  const missing = ['fx','kospi','components'].filter(k => !(DATA && DATA[k]));
+  if(missing.length){
+    html += '<div class="row" style="margin-top:8px"><span class="badge">안내</span>'
+          + `새 korea_fng.py 를 실행하면 <b>${missing.join(', ')}</b> 데이터가 추가되어 관련 표시가 살아납니다.</div>`;
+  }
+  n.innerHTML = html;
+}
+// ?t=타임스탬프 + no-store : GitHub Pages·노션 임베드가 옛 history.json을 캐시해서
+// 새로 올려도 안 바뀌는 문제를 막는다(매번 새 주소로 요청 -> 무조건 최신 파일).
+fetch('history.json?t=' + Date.now(), { cache: 'no-store' })
+  .then(r => { if(!r.ok) throw new Error('history.json 응답 ' + r.status); return r.json(); })
+  .then(d => { boot(d); markReal(); })
+  .catch(err => { console.error('[fng] history.json 로드 실패 → 예시 데이터로 대체:', err); boot(generateSample()); });
+
+// events.json 은 선택 파일: 있으면 EVENTS 배열과 합쳐 깃발 추가, 없으면 조용히 무시
+fetch('events.json?t=' + Date.now(), { cache: 'no-store' })
+  .then(r => r.ok ? r.json() : null)
+  .then(ev => { if(Array.isArray(ev) && ev.length){ EXTRA_EVENTS = ev; if(DATA) render(); } })
+  .catch(()=>{});
+</script>
+</body>
+</html>
