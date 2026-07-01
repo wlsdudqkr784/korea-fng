@@ -217,9 +217,10 @@
      ────────────────────────────────────────────────────────────── */
   @media (min-width:1000px){
     html.standalone .app{
-      max-width:1600px;
+      max-width:1780px;
       display:grid;
-      grid-template-columns:min(calc(82vh * 480 / 380), calc(100% - 388px)) 360px;
+      /* 차트가 가로를 꽉 채우고(우측 360px 사이드바 제외), 세로는 86vh로 캡 */
+      grid-template-columns:minmax(0, min(calc(86vh * 960 / 420), calc(100% - 388px))) 360px;
       grid-auto-flow:row;
       column-gap:28px; row-gap:0;
       align-items:start;
@@ -250,8 +251,17 @@
     html.standalone .app > .anal,
     html.standalone .app > footer{ grid-column:1 / -1; }
 
-    /* 우측 헤더 패널이 좁으므로(360px) 3개 카드는 세로 스택 */
-    html.standalone .subrow{ grid-template-columns:1fr; }
+    /* 우측 헤더 패널(360px) = 토스 '내 투자'식 컴팩트 지수 목록 */
+    html.standalone .subrow{ grid-template-columns:1fr; gap:8px; margin-top:12px; }
+    html.standalone .value{ font-size:48px; margin:8px 0 0; }
+    html.standalone .state{ font-size:16px; }
+    html.standalone .gauge{ margin:12px 0 4px; }
+    html.standalone .subbox{ display:flex; flex-wrap:wrap; align-items:baseline; row-gap:2px; padding:10px 13px; }
+    html.standalone .subbox .lbl{ flex-basis:100%; }
+    html.standalone .subbox .val{ font-size:21px; margin-top:2px; }
+    html.standalone .subbox .sub{ margin-left:auto; text-align:right; }
+    html.standalone .subbox.fx .fxrow{ gap:8px; }
+    html.standalone .subbox.fx{ grid-column:auto; }
 
     html.standalone .tip{ font-size:12px; }
 
@@ -316,6 +326,19 @@
         </div>
         <div class="sub" id="fxsub">–</div>
       </div>
+      <div class="subbox kospi2">
+        <div class="lbl"><span class="sw" style="background:var(--kospi)"></span>KOSPI 종가</div>
+        <div class="fxrow">
+          <div class="val" id="kospival" style="color:var(--kospi)">–</div>
+          <div class="chg" id="kospichg"></div>
+        </div>
+        <div class="sub" id="kospisub">–</div>
+      </div>
+      <div class="subbox usbox">
+        <div class="lbl"><span class="sw" style="background:var(--us)"></span>미국 CNN FNG</div>
+        <div class="val" id="usval" style="color:var(--us)">–</div>
+        <div class="sub" id="ussub">–</div>
+      </div>
     </div>
   </header>
 
@@ -353,7 +376,7 @@
     그래프의 <b>선을 탭(클릭)</b>하면 점·정보바가 그 선을 따라갑니다(◉ 표시). ·
     <b>드래그</b>하면 두 시점을 잇는 측정선이 그려지고 <b>상승/하락 폭·변화율·기간</b>이 라벨로 남습니다(<b>측정선 지우기</b>로 삭제). ·
     <b>등락색</b>: 상승=빨강/하락=파랑 · 환율·KOSPI는 <b>오른쪽 보조축</b> 기준 ·
-    <b>이벤트</b> 깃발은 파일 상단 EVENTS 배열을 직접 수정해 추가/삭제합니다.
+    <b>이벤트</b> 깃발은 <b>events.json</b>으로 관리 — Claude(Cowork)에게 "7월 21일 ○○ 발표 추가해줘"라고 말하면 즉시 반영됩니다.
   </div>
 
   <!-- ── 분석 섹션 ─────────────────────────────────────────── -->
@@ -530,7 +553,12 @@ function buffettLabel(r){
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 function fmtKRW(v){ return v==null ? '–' : Number(v).toLocaleString('ko-KR', {maximumFractionDigits:1}); }
 
-const VB_W = 480, VB_H = 380;
+/* 와이드(standalone·데스크톱)에서는 토스처럼 가로로 긴 차트(960×420),
+   노션 임베드·모바일에서는 기존 세로 비율(480×380) 유지. 로드 시 1회 결정. */
+const WIDE = document.documentElement.classList.contains('standalone')
+          && !!(window.matchMedia && window.matchMedia('(min-width:1000px)').matches);
+const VB_W = WIDE ? 960 : 480, VB_H = WIDE ? 420 : 380;
+document.getElementById('chart').setAttribute('viewBox', `0 0 ${VB_W} ${VB_H}`);
 const PAD = {l:8, r:8, t:26, b:24};
 const plotW = VB_W - PAD.l - PAD.r;
 const plotH = VB_H - PAD.t - PAD.b;
@@ -957,6 +985,40 @@ function updateHeader(){
     fxChg.innerHTML = `<span style="color:${c}">${ar} ${fmtKRW(Math.abs(d))}원</span>`;
   } else {
     fxVal.textContent = '–'; fxChg.textContent = '';
+  }
+
+  // KOSPI 종가: 마지막 유효값 + 직전 대비 (상승=빨강/하락=파랑, 국내 관행)
+  const koVal = document.getElementById('kospival');
+  const koChg = document.getElementById('kospichg');
+  const koSub = document.getElementById('kospisub');
+  if(koVal){
+    const koArr = (DATA.kospi || []).filter(p => p.v != null && !isNaN(p.v));
+    if(koArr.length){
+      const a = koArr[koArr.length-1];
+      const b = koArr[koArr.length-2] || a;
+      koVal.textContent = fmtKRW(a.v);
+      const d = Math.round((a.v - b.v)*100)/100;
+      const ar = d>0?'▲':d<0?'▼':'–';
+      const c = d>0?getCss('--up'):d<0?getCss('--down'):getCss('--muted');
+      koChg.innerHTML = `<span style="color:${c}">${ar} ${fmtKRW(Math.abs(d))}</span>`;
+      if(koSub) koSub.textContent = a.d + ' 종가';
+    } else {
+      koVal.textContent = '–'; if(koSub) koSub.textContent = '데이터 없음';
+    }
+  }
+
+  // 미국 CNN FNG: 마지막 유효값
+  const usEl = document.getElementById('usval');
+  const usSub = document.getElementById('ussub');
+  if(usEl){
+    const usArr = (DATA.us || []).filter(p => p.v != null && !isNaN(p.v));
+    if(usArr.length){
+      const a = usArr[usArr.length-1];
+      usEl.textContent = a.v;
+      if(usSub) usSub.textContent = zoneName(a.v) + ' · ' + a.d;
+    } else {
+      usEl.textContent = '–'; if(usSub) usSub.textContent = '데이터 없음';
+    }
   }
 }
 
