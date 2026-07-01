@@ -226,10 +226,11 @@
       align-items:start;
       justify-content:start;   /* 좌측 정렬 — 차트와 헤더를 왼쪽에 모음 */
     }
-    /* 헤더(큰 숫자·게이지·카드)는 우측 2열 1행. sticky로 스크롤 시 따라옴.
-       grid-row를 확장하지 않아야 .anal·footer의 전체폭 배치와 충돌하지 않는다. */
+    /* 헤더(큰 숫자·게이지·카드)는 우측 2열, 좌측 5개 행(탭·정보바·차트·컨트롤·힌트)에 걸침.
+       1행에만 두면 1행 높이가 헤더 높이(~700px)로 늘어나 좌측에 빈 공간이 생긴다.
+       span 5라서 .anal·footer(grid-column:1/-1)는 6행부터 정상 배치된다. */
     html.standalone .app > header{
-      grid-column:2; grid-row:1;
+      grid-column:2; grid-row:1 / span 5;
       position:sticky; top:26px; align-self:start;
       margin-bottom:0;
     }
