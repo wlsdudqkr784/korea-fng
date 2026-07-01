@@ -201,6 +201,7 @@
   .alertstrip{display:none;margin-top:12px;padding:8px 11px;border-radius:10px;background:var(--panel);
     border:1px solid var(--faint);border-left:3px solid var(--fear);font-size:12px;color:var(--ink);line-height:1.5}
   .alertstrip.show{display:block}
+  .alertstrip.stale{border-left-color:var(--extreme-fear)}
   footer b{color:var(--ink);font-weight:600}
   footer .row{margin:6px 0}
   .badge{display:inline-block;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;
@@ -291,6 +292,7 @@
       <div class="change" id="change"></div>
     </div>
     <div class="alertstrip" id="alertStrip"></div>
+    <div class="alertstrip stale" id="staleStrip"></div>
     <div class="gauge"><div class="mk" id="mk"></div></div>
     <div class="gaugelabels"><span>0 극단적 공포</span><span>50</span><span>극단적 탐욕 100</span></div>
 
@@ -1446,6 +1448,30 @@ function checkAlert(){
     }catch(err){ console.error('[fng] 알림 표시 실패:', err); }
   }
 }
+function checkFreshness(){
+  const a = DATA && DATA.kr;
+  const strip = document.getElementById('staleStrip');
+  if(!strip) return;
+  if(!a || !a.length){ strip.classList.remove('show'); return; }
+  const last = a[a.length-1].d;                 // 'YYYY-MM-DD' (마지막 거래일)
+  const p = last.split('-').map(Number);
+  const lastD = new Date(p[0], p[1]-1, p[2]);
+  const today = new Date(); today.setHours(0,0,0,0);
+  // 마지막 날짜 다음날부터 오늘까지의 평일(월~금) 수 = 며칠째 갱신 안 됐나
+  let biz = 0, cur = new Date(lastD);
+  cur.setDate(cur.getDate()+1);
+  while(cur <= today){
+    const wd = cur.getDay();                     // 0=일, 6=토
+    if(wd !== 0 && wd !== 6) biz++;
+    cur.setDate(cur.getDate()+1);
+  }
+  if(biz >= 5){                                  // 5영업일 넘게 안 오면 경고 표시
+    strip.textContent = '⚠ 데이터가 최신이 아닐 수 있습니다 — 마지막 갱신 ' + last + ' (약 ' + biz + '영업일 전). run_all.bat 을 실행해 주세요.';
+    strip.classList.add('show');
+  } else {
+    strip.classList.remove('show');
+  }
+}
 function syncNotifBtn(){
   const b = document.getElementById('notifBtn');
   if(!b) return;
@@ -1472,7 +1498,7 @@ document.getElementById('notifBtn').addEventListener('click', ()=>{
 });
 syncNotifBtn();
 
-function boot(data){ DATA=data; syncSeriesAvailability(); render(); checkAlert(); }
+function boot(data){ DATA=data; syncSeriesAvailability(); render(); checkAlert(); checkFreshness(); }
 function markReal(){
   const n=document.getElementById('note');
   if(!n) return;
